@@ -1,0 +1,5 @@
+MobilityVis/data
+MobilityVis/obj
+MobilityVis/bin
+*.suo
+*.user
