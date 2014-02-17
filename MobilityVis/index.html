@@ -1,11 +1,134 @@
 ﻿<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
-
+    <link href="css/style.css" rel="stylesheet" />
     <script src="lib/d3.v3/d3.v3.js"></script>
+    <script src="lib/polymaps/polymaps.js"></script>
+    <!--<script src="lib/mobility-vis/mobility-map.js"></script>-->
+    <script src="lib/jquery/jquery.min.js"></script>
+    <script src="lib/clusterfck/clusterfck-0.1.js"></script>
+    <script>
+        var mmap;
+
+        var mobility_map = (function () {
+
+            function mobility_map(divId, lat, long) {
+                var chart = this;
+                this.data = null;
+                this.map = po.map()
+                    .container(d3.select("#" + divId).append("svg:svg").node());
+                this.zoom = 0;
+                this.filterParam = 10;
+
+                var n = Math.pow(2, 12);//zoom
+                var xtile = ((long + 180) / 360) * n
+                var ytile = (1 - (Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI)) / 2 * n
+
+                this.map
+                    .add(po.interact())
+                    .add(po.image()
+                    .url(po.url("http://{S}tile.cloudmade.com"
+                    + "/b8dd6d159c1f4af48b74fc1a7c17a592"
+                    + "/1/256/{Z}/{X}/{Y}.png")
+                    .hosts(["a.", "b.", "c.", ""])));
+               this.map.add(po.compass()
+                    .pan("none"));
+
+               
+                d3.json("data/output2.json", function (data) {
+
+                    // Insert our layer beneath the compass.
+                    var layer = d3.select(".map").insert("svg:g", ".compass").attr("class", "vislayer");
+                    chart.data = data;
+                    chart.drawPoints();
+
+
+                    // Whenever the map moves, update the marker positions.
+                    chart.map.on("move", function () { chart.onMapMove(chart) });
+                    
+                    chart.zoom = chart.map.zoom();
+                });
+
+               
+                this.map.center({ lat: 55.786, lon: 12.521 });
+
+            };
+
+            mobility_map.prototype.drawPoints = function () {
+                var chart = this;
+                d3.select(".vislayer").selectAll("g").remove();
+                var layer = d3.select(".vislayer");
+
+                var marker = layer.selectAll("g")
+                     .data(this.filterPoints(this.data))
+                   .enter().append("svg:g")
+                     .attr("transform", transform);
+
+                function transform(d) {
+                    d = chart.map.locationPoint({ lon: d.lon, lat: d.lat });
+                    return "translate(" + d.x + "," + d.y + ")";
+                }
+
+                // Add a circle.
+                marker.append("svg:circle")
+                    .attr("class", "location")
+                    .attr("r", 4.5);
+            };
+
+
+            mobility_map.prototype.onMapMove = function (chart) {
+                if (chart.zoom != chart.map.zoom()) {
+                    chart.zoom = chart.map.zoom();
+                    chart.drawPoints();
+
+                }
+                var layer = d3.select(".vislayer").selectAll("g").attr("transform", transform);
+                function transform(d) {
+                    d = chart.map.locationPoint({ lon: d.lon, lat: d.lat });
+                    return "translate(" + d.x + "," + d.y + ")";
+                }
+            };
+
+
+            mobility_map.prototype.filterPoints = function (data) {
+                var chart = this;
+                var clusters = clusterfck.hcluster(data, function (a, b) {
+                    var aCoords = chart.map.locationPoint({ lon: a.lon, lat: a.lat });
+                    var bCoords = chart.map.locationPoint({ lon: b.lon, lat: b.lat });
+
+                    //return Math.sqrt(Math.pow(a.lat - b.lat, 2) + Math.pow(a.lon - b.lon, 2));                    
+                    
+                    return Math.sqrt(Math.pow(aCoords.x - bCoords.x, 2) + Math.pow(aCoords.y - bCoords.y, 2));                    
+
+                }, clusterfck.SINGLE_LINKAGE, 30);
+                var filteredData = [];
+                
+                for (var i = 0; i < clusters.length; i++) {
+                    filteredData.push(clusters[i].canonical);
+                }
+
+
+                return filteredData;
+
+
+            };
+
+            return mobility_map;
+
+        })();
+
+        $(document).ready(function () {
+            po = org.polymaps;
+
+           mmap = new mobility_map("vismap");
+        })
+    </script>
     <title>Visualizing Human Mobility</title>
 </head>
 <body>
-    lol sdasdasdadaaa
+    <div id="container">
+        <div id="vismap" style="width:1200px; height:750px;">
+        </div>
+    </div>
 </body>
 </html>

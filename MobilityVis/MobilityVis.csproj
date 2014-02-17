@@ -29,6 +29,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <IncludeIisSettings>true</IncludeIisSettings>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -39,18 +40,159 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="lib\" />
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="css\style.css" />
     <Content Include="index.html" />
+    <Content Include="lib\clusterfck\clusterfck-0.1.js" />
+    <Content Include="lib\clusterfck\kmeans.js" />
+    <Content Include="lib\d3.v3\d3.v3.js" />
+    <Content Include="lib\d3.v3\d3.v3.min.js" />
+    <Content Include="lib\mobility-vis\mobility-map.js" />
+    <Content Include="lib\mobility-vis\mobility-vis.js" />
+    <Content Include="lib\polymaps\examples\bing\map.html" />
+    <Content Include="lib\polymaps\examples\bing\map.js" />
+    <Content Include="lib\polymaps\examples\bounds\bounds.html" />
+    <Content Include="lib\polymaps\examples\bounds\bounds.js" />
+    <Content Include="lib\polymaps\examples\breakout\breakout.html" />
+    <Content Include="lib\polymaps\examples\canvas\cell-worker.js" />
+    <Content Include="lib\polymaps\examples\canvas\cell.html" />
+    <Content Include="lib\polymaps\examples\canvas\cell.js" />
+    <Content Include="lib\polymaps\examples\canvas\mandelbrot-worker.js" />
+    <Content Include="lib\polymaps\examples\canvas\mandelbrot.html" />
+    <Content Include="lib\polymaps\examples\canvas\mandelbrot.js" />
+    <Content Include="lib\polymaps\examples\canvas\procedural.js" />
+    <Content Include="lib\polymaps\examples\cloudmade\midnight-commander.html" />
+    <Content Include="lib\polymaps\examples\cloudmade\midnight-commander.js" />
+    <Content Include="lib\polymaps\examples\cloudmade\pale-dawn.html" />
+    <Content Include="lib\polymaps\examples\cloudmade\pale-dawn.js" />
+    <Content Include="lib\polymaps\examples\cluster\cluster.html" />
+    <Content Include="lib\polymaps\examples\cluster\cluster.js" />
+    <Content Include="lib\polymaps\examples\cluster\kmeans.js" />
+    <Content Include="lib\polymaps\examples\example.css" />
+    <Content Include="lib\polymaps\examples\features\features.html" />
+    <Content Include="lib\polymaps\examples\grid\grid.html" />
+    <Content Include="lib\polymaps\examples\grid\grid.js" />
+    <Content Include="lib\polymaps\examples\grid\tiles.html" />
+    <Content Include="lib\polymaps\examples\grid\tiles.js" />
+    <Content Include="lib\polymaps\examples\hilbert\hilbert.html" />
+    <Content Include="lib\polymaps\examples\hilbert\hilbert.js" />
+    <Content Include="lib\polymaps\examples\invert\invert.html" />
+    <Content Include="lib\polymaps\examples\iphone4\iphone4.html" />
+    <Content Include="lib\polymaps\examples\iphone4\iphone4.js" />
+    <Content Include="lib\polymaps\examples\kml\kml.html" />
+    <Content Include="lib\polymaps\examples\kml\kml.js" />
+    <Content Include="lib\polymaps\examples\loupe\loupe-map.js" />
+    <Content Include="lib\polymaps\examples\loupe\loupe.html" />
+    <Content Include="lib\polymaps\examples\loupe\loupe.js" />
+    <Content Include="lib\polymaps\examples\marker\marker.html" />
+    <Content Include="lib\polymaps\examples\marker\marker.js" />
+    <Content Include="lib\polymaps\examples\nasa\blue-marble.html" />
+    <Content Include="lib\polymaps\examples\nasa\blue-marble.js" />
+    <Content Include="lib\polymaps\examples\overlay\overlay.html" />
+    <Content Include="lib\polymaps\examples\overlay\overlay.js" />
+    <Content Include="lib\polymaps\examples\overlay\sf1906.png" />
+    <Content Include="lib\polymaps\examples\population\population.css" />
+    <Content Include="lib\polymaps\examples\population\population.html" />
+    <Content Include="lib\polymaps\examples\population\population.js" />
+    <Content Include="lib\polymaps\examples\shadow\shadow.html" />
+    <Content Include="lib\polymaps\examples\shadow\shadow.js" />
+    <Content Include="lib\polymaps\examples\small\small.html" />
+    <Content Include="lib\polymaps\examples\small\static.html" />
+    <Content Include="lib\polymaps\examples\statehood\fips.js" />
+    <Content Include="lib\polymaps\examples\statehood\statehood.html" />
+    <Content Include="lib\polymaps\examples\statehood\statehood.js" />
+    <Content Include="lib\polymaps\examples\streets\streets.html" />
+    <Content Include="lib\polymaps\examples\streets\streets.js" />
+    <Content Include="lib\polymaps\examples\tilestache\dot.gif" />
+    <Content Include="lib\polymaps\examples\tilestache\flickr.html" />
+    <Content Include="lib\polymaps\examples\tilestache\flickr.js" />
+    <Content Include="lib\polymaps\examples\tipsy\berkeley.png" />
+    <Content Include="lib\polymaps\examples\tipsy\stanford.png" />
+    <Content Include="lib\polymaps\examples\tipsy\tipsy.html" />
+    <Content Include="lib\polymaps\examples\transform\nypl.js" />
+    <Content Include="lib\polymaps\examples\transform\transform-inverse.html" />
+    <Content Include="lib\polymaps\examples\transform\transform.html" />
+    <Content Include="lib\polymaps\examples\transform\transform.js" />
+    <Content Include="lib\polymaps\examples\transform\transparent.png" />
+    <Content Include="lib\polymaps\examples\transition\ease.js" />
+    <Content Include="lib\polymaps\examples\transition\transition.html" />
+    <Content Include="lib\polymaps\examples\unemployment\unemployment-data.js" />
+    <Content Include="lib\polymaps\examples\unemployment\unemployment.html" />
+    <Content Include="lib\polymaps\examples\unemployment\unemployment.js" />
+    <Content Include="lib\polymaps\examples\world\tsv.js" />
+    <Content Include="lib\polymaps\examples\world\world.html" />
+    <Content Include="lib\polymaps\examples\world\world.js" />
+    <Content Include="lib\polymaps\lib\blueprint\ie.css" />
+    <Content Include="lib\polymaps\lib\blueprint\plugins\fancy-type\screen.css" />
+    <Content Include="lib\polymaps\lib\blueprint\print.css" />
+    <Content Include="lib\polymaps\lib\blueprint\screen.css" />
+    <Content Include="lib\polymaps\lib\colorbrewer\colorbrewer.css" />
+    <Content Include="lib\polymaps\lib\colorbrewer\colorbrewer.js" />
+    <Content Include="lib\polymaps\lib\crimespotting\crimespotting.js" />
+    <Content Include="lib\polymaps\lib\google-compiler\compiler-20100616.jar" />
+    <Content Include="lib\jquery\jquery.min.js" />
+    <Content Include="lib\polymaps\lib\modernizr\modernizr.min.js" />
+    <Content Include="lib\polymaps\lib\nns\nns.js" />
+    <Content Include="lib\polymaps\lib\nns\nns.min.js" />
+    <Content Include="lib\polymaps\lib\protovis\protodata.js" />
+    <Content Include="lib\polymaps\lib\protovis\protodata.min.js" />
+    <Content Include="lib\polymaps\lib\raphaeljs\icons.js" />
+    <Content Include="lib\polymaps\lib\tipsy\jquery.tipsy.js" />
+    <Content Include="lib\polymaps\lib\tipsy\tipsy.css" />
+    <Content Include="lib\polymaps\lib\tipsy\tipsy.gif" />
+    <Content Include="lib\polymaps\polymaps.js" />
+    <Content Include="lib\polymaps\polymaps.min.js" />
+    <Content Include="lib\polymaps\src\Arrow.js" />
+    <Content Include="lib\polymaps\src\Cache.js" />
+    <Content Include="lib\polymaps\src\Compass.js" />
+    <Content Include="lib\polymaps\src\Dblclick.js" />
+    <Content Include="lib\polymaps\src\Dispatch.js" />
+    <Content Include="lib\polymaps\src\Drag.js" />
+    <Content Include="lib\polymaps\src\end.js" />
+    <Content Include="lib\polymaps\src\GeoJson.js" />
+    <Content Include="lib\polymaps\src\Grid.js" />
+    <Content Include="lib\polymaps\src\Hash.js" />
+    <Content Include="lib\polymaps\src\Id.js" />
+    <Content Include="lib\polymaps\src\Image.js" />
+    <Content Include="lib\polymaps\src\Interact.js" />
+    <Content Include="lib\polymaps\src\Layer.js" />
+    <Content Include="lib\polymaps\src\Map.js" />
+    <Content Include="lib\polymaps\src\ns.js" />
+    <Content Include="lib\polymaps\src\Queue.js" />
+    <Content Include="lib\polymaps\src\start.js" />
+    <Content Include="lib\polymaps\src\Stylist.js" />
+    <Content Include="lib\polymaps\src\Svg.js" />
+    <Content Include="lib\polymaps\src\Touch.js" />
+    <Content Include="lib\polymaps\src\Transform.js" />
+    <Content Include="lib\polymaps\src\Url.js" />
+    <Content Include="lib\polymaps\src\Wheel.js" />
     <Content Include="web.config" />
-    <None Include="web.Debug.config">
-      <DependentUpon>web.config</DependentUpon>
-    </None>
-    <None Include="web.Release.config">
-      <DependentUpon>web.config</DependentUpon>
-    </None>
+    <Content Include="lib\d3.v3\LICENSE" />
+    <Content Include="lib\polymaps\examples\bounds\district.json" />
+    <Content Include="lib\polymaps\examples\kml\sample.kml" />
+    <Content Include="lib\polymaps\examples\streets\streets.json" />
+    <Content Include="lib\polymaps\examples\world\area.tsv" />
+    <Content Include="lib\polymaps\examples\world\internet.tsv" />
+    <Content Include="lib\polymaps\examples\world\population.tsv" />
+    <Content Include="lib\polymaps\examples\world\world.json" />
+    <Content Include="lib\polymaps\lib\blueprint\LICENSE" />
+    <Content Include="lib\polymaps\lib\colorbrewer\LICENSE" />
+    <Content Include="lib\polymaps\lib\google-compiler\COPYING" />
+    <Content Include="lib\polymaps\lib\google-compiler\README" />
+    <Content Include="lib\jquery\LICENSE" />
+    <Content Include="lib\polymaps\lib\modernizr\LICENSE" />
+    <Content Include="lib\polymaps\lib\nns\LICENSE" />
+    <Content Include="lib\polymaps\lib\protovis\LICENSE" />
+    <Content Include="lib\polymaps\lib\raphaeljs\LICENSE" />
+    <Content Include="lib\polymaps\lib\tipsy\LICENSE" />
+    <Content Include="lib\polymaps\LICENSE" />
+    <Content Include="lib\polymaps\Makefile" />
+    <Content Include="lib\polymaps\README.mkd" />
+    <None Include="data\deca86ae4bac4d8caff4dec795f4d837.json" />
+    <None Include="data\output.json" />
+    <Content Include="data\output2.json" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
