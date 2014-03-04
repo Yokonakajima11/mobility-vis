@@ -5,8 +5,13 @@
 body {
   font-size: 14px;
   text-rendering: optimizeLegibility;
+  padding: 0;
+  margin: 0;
 }
-
+html, body, #vismap {
+            height: 100%;
+            width: 100%;
+        }
 svg {
   display: block;
   overflow: hidden;

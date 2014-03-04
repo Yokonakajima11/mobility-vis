@@ -1,5 +1,8 @@
 MobilityVis/data
 MobilityVis/obj
 MobilityVis/bin
+MobilityVis/lib/polymaps/src
+MobilityVis/lib/polymaps/lib
+MobilityVis/lib/polymaps/examples
 *.suo
 *.user

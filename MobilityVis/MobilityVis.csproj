@@ -46,7 +46,6 @@
     <Content Include="css\style.css" />
     <Content Include="index.html" />
     <Content Include="lib\clusterfck\clusterfck-0.1.js" />
-    <Content Include="lib\clusterfck\kmeans.js" />
     <Content Include="lib\d3.v3\d3.v3.js" />
     <Content Include="lib\d3.v3\d3.v3.min.js" />
     <Content Include="lib\mobility-vis\mobility-map.js" />
@@ -168,7 +167,9 @@
     <Content Include="lib\polymaps\src\Transform.js" />
     <Content Include="lib\polymaps\src\Url.js" />
     <Content Include="lib\polymaps\src\Wheel.js" />
-    <Content Include="web.config" />
+    <Content Include="web.config">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="lib\d3.v3\LICENSE" />
     <Content Include="lib\polymaps\examples\bounds\district.json" />
     <Content Include="lib\polymaps\examples\kml\sample.kml" />
@@ -190,9 +191,7 @@
     <Content Include="lib\polymaps\LICENSE" />
     <Content Include="lib\polymaps\Makefile" />
     <Content Include="lib\polymaps\README.mkd" />
-    <None Include="data\deca86ae4bac4d8caff4dec795f4d837.json" />
-    <None Include="data\output.json" />
-    <Content Include="data\output2.json" />
+    <Content Include="data\newdata.csv" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
