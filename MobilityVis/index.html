@@ -4,6 +4,7 @@
     <link href="css/style.css" rel="stylesheet" />
     <script src="lib/d3.v3/d3.v3.js"></script>
     <script src="lib/polymaps/polymaps.js"></script>
+    <script src="lib/mobility-vis/mobility-timeline.js"></script>
     <script src="lib/mobility-vis/mobility-map.js"></script>
     <script src="lib/jquery/jquery.min.js"></script>
     <script src="lib/clusterfck/clusterfck-0.1.js"></script>
@@ -15,7 +16,8 @@
         $(document).ready(function () {
             po = org.polymaps;
 
-           mmap = new mobility_map("vismap");
+            mmap = new mobility_map("vismap");
+            $(window).resize(function () { mmap.redraw() });
         })
     </script>
     <title>Visualizing Human Mobility</title>

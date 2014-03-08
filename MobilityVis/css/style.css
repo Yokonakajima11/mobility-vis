@@ -108,7 +108,14 @@ img.ex {
   text-align: right;
   color: #aaa;
 }
-
+.dateString {
+  fill: rgb(42, 42, 42);
+  color: rgb(42, 42, 42);
+  font-size: 12px;
+  text-decoration:none;
+  font-weight: bold;
+  stroke:none;
+}
 .sidebar ul {
   text-align: right;
   margin-right: 0;
@@ -144,11 +151,18 @@ div#map {
   font-size: 12px;
   height: 1em;
 }
+.timeline {
+  fill: #eeeeee;
+  fill-opacity: .8;
+  stroke: #999999;
+  stroke-width: 1.5px;
 
+}
 .compass .back {
   fill: #eee;
   fill-opacity: .8;
 }
+
 
 .compass .fore {
   stroke: #999;
