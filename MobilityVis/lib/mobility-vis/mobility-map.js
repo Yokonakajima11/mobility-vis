@@ -114,10 +114,10 @@ var mobility_map = (function () {
             .style("fill", "#E80C7A")
         .style("stroke", "#E80C7A").style("stroke-width",2);
 
-        newMarkers.append("svg:text")
-            .attr("class", "location")
-            .text(function (d) { return d.count })
-            .style("fill", "#ffffff");
+        //newMarkers.append("svg:text")
+        //    .attr("class", "location")
+        //    .text(function (d) { return d.count })
+        //    .style("fill", "#ffffff");
 
         this.radiusScale.domain([d3.min(this.displayedData, function (d) {
             return d.count;
@@ -204,6 +204,12 @@ var mobility_map = (function () {
         this.startTime = start;
         this.endTime = end;
         this.updatePoints();
+    };
+
+    mobility_map.prototype.timeTick = function () {
+        this.endTime += 1000 * 60 * 60 * 24;
+        this.updatePoints();
+
     };
 
 

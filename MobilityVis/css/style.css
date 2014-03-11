@@ -158,6 +158,13 @@ div#map {
   stroke-width: 1.5px;
 
 }
+.playbutton {
+  fill: #eeeeee;
+  fill-opacity: .8;
+  stroke: #999999;
+  stroke-width: 1.5px;
+
+}
 .compass .back {
   fill: #eee;
   fill-opacity: .8;
