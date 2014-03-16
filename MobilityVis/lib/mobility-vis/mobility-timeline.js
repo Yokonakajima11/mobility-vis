@@ -6,7 +6,7 @@
 
 var mobility_timeline = (function () {
 
-    function mobility_timeline(parentContainer, visRef,start, end) {
+    function mobility_timeline(parentContainer, visRef,start, end, currentStart) {
         /// <param name="visRef" type="mobility_map"></param>
         /// <field name="visRef" type="mobility_map"></param>
         var chart = this;
@@ -14,14 +14,15 @@ var mobility_timeline = (function () {
         this.visRef = visRef;
         this.startTime = start;
         this.endTime = end;
-        this.currentStartTime = 0;
+        this.currentStartTime = currentStart;
         this.currentEndTime = 0;
         this.currentTime = 0;
         this.bubble = "0,0 54,0 54,5 68,9 54,11 54,15 0,15 0,0";
-
+        this.play = "0,0 0,30 30,15 0,0";
+        this.stop = "0,0 0,30 15,30 15,0 0,0";
         this.yScale = null;
         this.brush = null;
-        this.tickDuration = 100;
+        this.tickDuration = 600;
 
         this.playing = false;
         this.pause = false;
@@ -33,7 +34,7 @@ var mobility_timeline = (function () {
     mobility_timeline.prototype.drawTimeline = function () {
         var that = this;
        this.yScale = d3.time.scale().range([10, 490]).domain([this.startTime, this.endTime]);
-       this.brush = d3.svg.brush().y(this.yScale).on("brush", function () { that.updateTimeline() }).extent([(this.endTime + this.startTime) / 2, this.endTime]);
+       this.brush = d3.svg.brush().y(this.yScale).on("brush", function () { that.updateTimeline() }).extent([this.currentStartTime, this.endTime]);
         this.currentEndTime = this.endTime;
             this.currentStartTime = (this.endTime + this.startTime) / 2;
         
@@ -71,14 +72,14 @@ var mobility_timeline = (function () {
                  + "M" + (4.5 * x) + "," + (y + 8)
                  + "V" + (2 * y - 8);
          }
-
-         this.parent.append("rect")
-         .attr("rx", 6)
-         .attr("ry", 6)
-         .attr("x", 0)
-         .attr("y", 550)
-         .attr("width", 50)
-         .attr("height", 50)
+         this.parent.append("polyline").attr("points",this.play).attr("transform", "translate(0,515)")
+         //this.parent.append("rect")
+         //.attr("rx", 6)
+         //.attr("ry", 6)
+         //.attr("x", 0)
+         //.attr("y", 550)
+         //.attr("width", 50)
+         //.attr("height", 50)
              .attr("class", "playbutton").on("click", function () {
              if (!that.playing && !that.pause) {
                  that.startPlaying();
@@ -93,6 +94,7 @@ var mobility_timeline = (function () {
              }
          }
              );
+
     };
 
     mobility_timeline.prototype.updateTimeline = function () {
@@ -106,14 +108,14 @@ var mobility_timeline = (function () {
         this.pause = false;
         d3.select("#ticker").remove();
         this.visRef.updateTime(this.currentStartTime, this.currentEndTime);
-        d3.select(".playbutton").style("fill", "#eeeeee");
+        d3.select(".playbutton").attr("points", this.play);
 
         d3.selectAll(".dateLabel").style("visibility", "visible");
     };
 
     mobility_timeline.prototype.startPlaying = function () {
         var that = this;
-        var timeDifferent = Math.floor((this.currentEndTime - this.currentStartTime) / (1000 * 60 * 24 * 60));
+        var timeDifferent = Math.floor((this.currentEndTime - this.currentStartTime) / (1000 * 60 * 60 * 24));
         var tickerGroup = this.parent.append("g").attr("id", "ticker")
             .attr("transform", "translate(0," + this.yScale(this.currentStartTime) + ")");
         tickerGroup.transition()
@@ -131,17 +133,18 @@ var mobility_timeline = (function () {
 
         tickerGroup.append("polyline").attr("points", this.bubble).attr("transform", "translate(-60,-7)").attr("class", "tickerLabel");
         tickerGroup.append("text").attr("class", "dateString").attr("id", "currDate").text(mobility_timeline.formatDate(new Date(this.brush.extent()[0]))).attr("transform", "translate(-59,5)");
+        var startDate = new Date(that.currentStartTime).setHours(0, 0, 0, 0);
 
-        that.visRef.updateTime(that.currentStartTime, that.currentStartTime);
+        that.visRef.updateTime(startDate, startDate + (1000 * 60 * 60 * 24));
         this.playing = true;
-        d3.select(".playbutton").style("fill", "pink");
+        d3.select(".playbutton").attr("points", this.stop);
         d3.selectAll(".dateLabel").style("visibility", "hidden");
 
 
         this.currentTime = this.currentStartTime;
         setTimeout(function () {
             that.timeTick();
-            that.currentTime += 1000 * 60 * 24 * 60;
+            that.currentTime += 1000 * 60 * 60 * 24 ;
         }, that.tickDuration);
 
     };
@@ -159,15 +162,16 @@ var mobility_timeline = (function () {
         }
         else if (that.currentTime >= that.currentEndTime) {
             this.playing = false;
-            d3.select(".playbutton").style("fill", "#eeeeee");
+            d3.select(".playbutton").attr("points", this.play);
             d3.selectAll(".dateLabel").style("visibility", "visible");
+            d3.select("#ticker").remove();
         }
     };
     mobility_timeline.prototype.pausePlaying = function () {
         this.pause = true;
         d3.select("#ticker").transition()
         .duration(0);
-        d3.select(".playbutton").style("fill", "red");
+        d3.select(".playbutton").attr("points", this.play);
 
 
     };
@@ -177,7 +181,7 @@ var mobility_timeline = (function () {
         var timeDifferent = Math.floor((this.currentEndTime - this.currentTime) / (1000 * 60 * 24 * 60));
         d3.select("#ticker").transition().duration(timeDifferent * this.tickDuration).ease("linear")
             .attr("transform", "translate(0," + this.yScale(this.currentEndTime) + ")")
-        d3.select(".playbutton").style("fill", "yellow");
+        d3.select(".playbutton").attr("points", this.stop);
 
         setTimeout(function () {
             that.timeTick();
