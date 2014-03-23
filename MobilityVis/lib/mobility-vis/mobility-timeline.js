@@ -22,7 +22,7 @@ var mobility_timeline = (function () {
         this.stop = "M0,0 L0,20 L7,20 L7,0 L0,0 M0,0 M15,20 L22,20 L22,0 L15,0 L15,20";
         this.yScale = null;
         this.brush = null;
-        this.tickDuration = 600;
+        this.tickDuration = 1000;
 
         this.playing = false;
         this.pause = false;
@@ -200,10 +200,15 @@ var mobility_timeline = (function () {
 
         }
         else if (that.currentTime >= that.currentEndTime) {
+            // Finish playback
             this.playing = false;
-            d3.select(".playbutton").attr("d", this.play )//;attr("points", this.play);
-            d3.selectAll(".dateLabel").style("visibility", "visible");
-            d3.select("#ticker").remove();
+            this.updateTimeline();
+            this.finishUpdate();
+            //d3.select(".playbutton").attr("d", this.play )//;attr("points", this.play);
+            //d3.selectAll(".dateLabel").style("visibility", "visible");
+            //d3.select("#ticker").remove();
+            //this.visRef.updateTime
+
         }
     };
     mobility_timeline.prototype.pausePlaying = function () {

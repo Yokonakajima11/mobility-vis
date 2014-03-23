@@ -43,6 +43,13 @@ var mobility_map = (function () {
         /// <field name="dayOfWeekFilter" type="Array">Filter for days of the week. Days in the filter 
         /// (as integers) will not be displayed</field>
         this.dayOfWeekFilter = [];
+        /// <field name="timeOfDayFilter" type="Array">Filter for times of day. Periods in the filter 
+        /// (as ranges) will not be displayed</field>
+        this.timeOfDayFilter = [{from:0, to:6, label: "night", filtered:false},
+                                {from:6, to:12, label: "morning", filtered:false}, 
+                                {from:12, to:18, label: "afternoon", filtered:false}, 
+                                {from:18, to:22, label: "evening", filtered:false}, 
+                                {from:22, to:24, label: "night", filtered:false}];
         
         /// <field type="Array">List of currently displayed locations </field>
         this.displayedPoints = null;
@@ -53,7 +60,7 @@ var mobility_map = (function () {
 
         /*--------------------------------------  Scales    ------------------------------------------*/
         /// <field type="d3.scale">Scale for circle radii </field>
-        this.radiusScale = d3.scale.pow().exponent(0.3).range([4, 20]);
+        this.radiusScale = d3.scale.pow().exponent(0.3).range([4, 20]).domain([1, 100]);
         /// <field type="d3.scale">Scale for circle colors</field>
         this.colorScale = d3.scale.linear().range(["#e80c7a", "#FFF500"]).domain([0, 12]).clamp(true);
         /// <field type="d3.scale">Scale for connections stroke</field>
@@ -100,61 +107,127 @@ var mobility_map = (function () {
             chart.map.on("move", function () { chart.onMapMove() });
 
             // Begin
-            chart.updatePoints();
-            chart.updateConnections(1500, 0);
+            chart.updatePoints(false);
+            chart.updateConnections(false, 1500);
         });
 
 
         this.map.center({ lat: lat, lon: long});
 
     };
-    mobility_map.prototype.updatePoints = function () {
+
+    mobility_map.prototype.applyFilters = function (start, end) {
+        var filteredPeriods = [];
+        var finalFilteredPeriods = [];
+        var finalPeriod = 0;
+
+        var noOfDays = (end - start) / (1000 * 60 * 60 * 24);
+        var currDay = new Date(start);
+
+        do {
+            var periodStart = Math.max(currDay.setHours(0, 0, 0, 0), start);
+            var periodEnd = Math.min(currDay.setHours(23, 59, 59, 999), end);
+
+            if (this.dayOfWeekFilter.indexOf(currDay.getDay()) == -1)
+                filteredPeriods.push({ from: periodStart, to: periodEnd });
+            currDay.setDate(currDay.getDate() + 1);
+
+        } while (periodEnd < end);
+        
+        var startFound = false;
+        for (var i = 0; i < filteredPeriods.length; i++) {
+            currDay = new Date(filteredPeriods[i].from);
+            var j = 0;
+            do {
+                var periodStart = Math.max(currDay.setHours(this.timeOfDayFilter[j].from, 0, 0, 0), start);
+                var periodEnd = Math.min(currDay.setHours(this.timeOfDayFilter[j].to-1, 59, 59, 999), end);
+
+                if (!startFound && start > currDay.setHours(this.timeOfDayFilter[j].from, 0, 0, 0) && start < currDay.setHours(this.timeOfDayFilter[j].to, 0, 0, 0))
+                    startFound = true;
+                else if (!startFound) {
+                    j++;
+                    continue;
+                }
+
+                
+
+                if (!this.timeOfDayFilter[j].filtered) {
+                    finalFilteredPeriods.push({ from: periodStart, to: periodEnd });
+                }
+
+                j++;
+                
+            } while (j < this.timeOfDayFilter.length && periodEnd < end)
+        }
+
+        for (var i = 0; i < finalFilteredPeriods.length; i++) {
+            finalPeriod += finalFilteredPeriods[i].to - finalFilteredPeriods[i].from;
+
+        }
+
+        return finalPeriod;
+
+    };
+
+
+
+    mobility_map.prototype.updatePoints = function (animatedTick) {
     	/// <summary>
-    	/// Updates the point according to time period
+        /// Updates the point according to time period
+        /// TODO
     	/// </summary>
 
         var countDict = {};
+        this.displayedPoints = [];
         // Count the number and time of visits in all point for this period in dictionary
         for (var i = 0; i < this.data.time.length; i++) {
             var curDate = new Date(this.data.time[i].start);
             if (this.data.time[i].start > this.endTime)
                 break;
-            else if (this.data.time[i].start > this.startTime && this.dayOfWeekFilter.indexOf(curDate.getDay()) == -1) {
-                if (countDict[this.data.time[i].id] == undefined)
-                    countDict[this.data.time[i].id] = { time: this.data.time[i].end - this.data.time[i].start, count: 1 };
-                else {
-                    countDict[this.data.time[i].id].time += this.data.time[i].end - this.data.time[i].start;
-                    countDict[this.data.time[i].id].count += 1;
+            else if (this.data.time[i].start > this.startTime) {
+                var filteredPeriod = this.applyFilters(this.data.time[i].start, this.data.time[i].end);
+                if (filteredPeriod > 0) {
+                    if (countDict[this.data.time[i].id] == undefined)
+                        countDict[this.data.time[i].id] = { time: filteredPeriod, count: 1 };
+                    else {
+                        countDict[this.data.time[i].id].time += filteredPeriod;
+                        countDict[this.data.time[i].id].count += 1;
+                    }
                 }
             }
         }
         // Move data from dictionary to Array
         for (var i = 0; i < this.data.location.length; i++)
-            if (countDict[this.data.location[i].id] == undefined) {
+            if (countDict[this.data.location[i].id] == undefined && !animatedTick) {
                 this.data.location[i].count = 0;
                 this.data.location[i].time = 0;
             }
-            else {
+            else if(!animatedTick){
                 this.data.location[i].count = (countDict[this.data.location[i].id].count);
                 this.data.location[i].time = (countDict[this.data.location[i].id].time)
             }
+            else if (countDict[this.data.location[i].id] != undefined && animatedTick) {
+                this.data.location[i].count += (countDict[this.data.location[i].id].count);
+                this.displayedPoints.push(this.data.location[i]);
+            }
 
-        // Display only the points that have count > 0
-        this.data.location.sort(function (a, b) { return b.count - a.count; });
-        var slice = 0
-        for (var i = 0; i < this.data.location.length; i++) {
-            if (this.data.location[i].count == 0) break;
-            this.data.location[i].time /= (this.data.location[i].count * 1000 * 60 * 60);
-            slice = i + 1;
+        if (!animatedTick) {
+            // Display only the points that have count > 0
+            this.data.location.sort(function (a, b) { return b.count - a.count; });
+            var slice = 0
+            for (var i = 0; i < this.data.location.length; i++) {
+                if (this.data.location[i].count == 0) break;
+                this.data.location[i].time /= (this.data.location[i].count * 1000 * 60 * 60);
+                slice = i + 1;
+            }
+            this.displayedPoints = this.data.location.slice(0, slice);
         }
-        this.displayedPoints = this.data.location.slice(0, slice);
-
-        this.drawPoints();
+        this.drawPoints(animatedTick);
     };
 
 
 
-    mobility_map.prototype.drawPoints = function () {
+    mobility_map.prototype.drawPoints = function (animatedTick) {
     	/// <summary>
     	/// Draw the points onto the visualization layer
     	/// </summary>
@@ -164,10 +237,12 @@ var mobility_map = (function () {
         d3.select(".vislayer").selectAll(".connection").remove();
         var marker = layer.selectAll(".locationPoint")
              .data(this.displayedPoints, function (d) { return d.id });
-
-        // Remove the points that are no longer displayed
-        marker.exit().transition().attr("r", 0).remove();
-
+        if (!animatedTick)
+            // Remove the points that are no longer displayed
+            marker.exit().transition().attr("r", 0).remove();
+        else {
+            layer.selectAll(".location").transition().style("fill", "#aaaaaa").style("stroke", "#888888");
+        }
         var newMarkers = marker.enter().append("svg:g").attr("class","locationPoint")
              .attr("transform", transform);
 
@@ -195,11 +270,11 @@ var mobility_map = (function () {
         //    .text(function (d) { return d.id })
         //    .style("fill", "blue").attr("y", -20);
 
-        this.radiusScale.domain([d3.min(this.displayedPoints, function (d) {
-            return d.count;
-        }), d3.max(this.displayedPoints, function (d) {
-            return d.count;
-        })]);
+        //this.radiusScale.domain([d3.min(this.displayedPoints, function (d) {
+        //    return d.count;
+        //}), d3.max(this.displayedPoints, function (d) {
+        //    return d.count;
+        //})]);
 
         marker.selectAll("circle").transition().duration(100).attr("r", function (d) {
             return chart.radiusScale(d.count)
@@ -221,12 +296,13 @@ var mobility_map = (function () {
    
 
 
-    mobility_map.prototype.updateConnections = function (speed, delay) {
+    mobility_map.prototype.updateConnections = function (animatedTick, duration) {
     	/// <summary>
-    	/// Update the connections data within the given time period
+        /// Update the connections data within the given time period
+        /// TODO
     	/// </summary>
-    	/// <param name="speed", type="Number">Speed with which to draw the connections</param>
-    	/// <param name="delay" type="Number>Delay for drawing each of the connections</param>
+    	/// <param name="animatedTick"></param>
+    	/// <param name="duration"></param>
         var delay = 0;
         var p1 = this.map.locationPoint(this.refPoint1),
             p2 = this.map.locationPoint(this.refPoint2);
@@ -239,28 +315,36 @@ var mobility_map = (function () {
             var found = false;
             var curDate = new Date(this.data.time[i].start);
             var nextDate = new Date(this.data.time[i+1].start);
-            if (this.data.time[i + 1].start > this.endTime)
+            if (this.data.time[i].start > this.endTime)
                 break;
-            else if (this.data.time[i].start > this.startTime && this.data.time[i].id != this.data.time[i + 1].id
-                && this.dayOfWeekFilter.indexOf(curDate.getDay()) == -1 && this.dayOfWeekFilter.indexOf(nextDate.getDay()) == -1) {
-                for (var j = 0; j < this.data.connections.length; j++)
-                {
-                    if (this.data.connections[j].from == this.data.time[i].id && this.data.connections[j].to == this.data.time[i + 1].id) {
-                        this.data.connections[j].score += 1;
-                        found = true;
-                        break;
+            else if (this.data.time[i].start > this.startTime && this.data.time[i].id != this.data.time[i + 1].id) {
+                var filteredPeriod = this.applyFilters(this.data.time[i].end, this.data.time[i + 1].start);
+                if (filteredPeriod > 0) {
+                    for (var j = 0; j < this.data.connections.length; j++) {
+                        if (this.data.connections[j].from == this.data.time[i].id && this.data.connections[j].to == this.data.time[i + 1].id) {
+                            this.data.connections[j].score += 1;
+                            found = true;
+                            break;
+                        }
                     }
+                    if (!found)
+                        this.data.connections.push({ from: this.data.time[i].id, to: this.data.time[i + 1].id, tresholded: false, score: 1, tresholdedScore: 0 });
                 }
-                if (!found)
-                    this.data.connections.push({ from: this.data.time[i].id, to: this.data.time[i + 1].id, tresholded: false, score: 1, tresholdedScore: 0 });
             }
         }
         //Run thresholding
-        this.tresholdEdges(0.6);
-        // ...and draw
-        for (var i = 0; i < this.data.connections.length ; i++) {
-            this.drawConnection(this.data.connections[i], speed, i * delay);
+        if (!animatedTick) {
+            this.tresholdEdges(0.6);
+            // ...and draw
+            for (var i = 0; i < this.data.connections.length ; i++) {
+                this.drawConnection(this.data.connections[i], duration, 0);
+            }
         }
+        else
+            for (var i = 0; i < this.data.connections.length ; i++) {
+                this.data.connections[i].tresholded = true
+                this.drawConnection(this.data.connections[i], (duration) / this.data.connections.length, i * (duration / this.data.connections.length));
+            }
     };
 
 
@@ -270,7 +354,7 @@ var mobility_map = (function () {
     	/// </summary>
     	/// <param name="connection" type="Object">Connection object</param>
     	/// <param name="speed" type="Number">Speed with which to draw the curve</param>
-    	/// <param name="delay" type="Number>Delay before the curve drawing begins</param>
+    	/// <param name="delay" type="Number">Delay before the curve drawing begins</param>
         var chart = this;
         var pointA = this.data.locDict[connection.from];
         var pointB = this.data.locDict[connection.to];
@@ -464,29 +548,40 @@ var mobility_map = (function () {
     	/// <param name="end">End of time period</param>
         this.startTime = start;
         this.endTime = end;
-        this.updatePoints();
+        this.updatePoints(false);
     };
 
     mobility_map.prototype.updateTimeEnd = function () {
     	/// <summary>
         /// Change displayed time period. Event handler for timeline's brushend event
     	/// </summary>
-        this.updateConnections(1500, 0);
+        this.updateConnections(false, 1500);
     };
 
     mobility_map.prototype.updateDayOfWeekFilter = function (filter) {
     	/// <summary>
     	/// TODO
     	/// </summary>
-    	/// <param name="addNotRemove"></param>
     	/// <param name="filter"></param>
         if (this.dayOfWeekFilter.indexOf(filter) != -1)
             this.dayOfWeekFilter.splice(this.dayOfWeekFilter.indexOf(filter), 1);
         else
             this.dayOfWeekFilter.push(filter);
 
-        this.updatePoints();
-        this.updateConnections(1500, 0);
+        this.updatePoints(false);
+        this.updateConnections(false , 1500);
+    };
+
+    mobility_map.prototype.updateTimeofDayFilter = function (filter) {
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="filter">Period index to ignore</param>
+        this.timeOfDayFilter[filter].filtered = !this.timeOfDayFilter[filter].filtered;
+
+
+        this.updatePoints(false);
+        this.updateConnections(false, 1500);
     };
 
     mobility_map.prototype.timeTick = function () {
@@ -495,8 +590,8 @@ var mobility_map = (function () {
     	/// </summary>
         this.startTime += 1000 * 60 * 60 * 24;
         this.endTime += 1000 * 60 * 60 * 24;
-        this.updatePoints();
-
+        this.updatePoints(true);
+        this.updateConnections(true, 1000);
     };
 
 
