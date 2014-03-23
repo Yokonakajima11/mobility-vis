@@ -2,88 +2,124 @@
 /// <reference path="../d3.v3/d3.v3.js" />
 /// <reference path="../clusterfck/clusterfck-0.1.js" />
 /// <reference path="../jquery/jquery.min.js" />
+/// <reference path="mobility-gui.js" />
 
 var mobility_map = (function () {
 
     function mobility_map(divId, lat, long) {
-        /// <param name="divId" type="String"></param>
-        /// <param name="lat" type="Number"></param>
-        /// <param name="long" type="Number"></param>
-
+        /// <summary>Constructor for visualization</summary>
+        /// <param name="divId" type="String">Id of the parent contaier</param>
+        /// <param name="lat" type="Number">Starting latitude</param>
+        /// <param name="long" type="Number">Starting longitude</param>
         var chart = this;
+
+        /*-----------------------------------------  Layers    ---------------------------------------*/
+        // <field name="vis" type="d3.selection()">Parent container ID</field>
+        this.parentId = divId;                                                                                  
+        /// <field name="vis" type="d3.selection()">Main SVG </field>
         this.vis = d3.select("#" + divId).append("svg:svg");
-
-        this.data = null;
-        this.displayedData = null;
-        this.map = po.map()
+        /// <field name="visLayer" type="d3.selection()">Visualisation layer</field>
+        this.visLayer = null;
+        /// <field name="guiLayer" type="d3.selection()">GUI layer</field>
+        this.guiLayer = null;
+        /// <field type="d3.selection()">Timeline layer </field>
+        this.timelineLayer = null;
+        /// <field type="org.polymaps.map()">Map container </field>
+        this.map = po.map()                                                                                 
             .container(this.vis.append("g").attr("id", "map-container").node());
-        this.zoom = 0;
-        this.initialZoom;
-        this.filterParam = 30;
-        this.radiusScale = d3.scale.pow().exponent(0.3).range([4, 20]);
-        this.colorScale = d3.scale.linear().range(["#e80c7a", "#FFF500"]).domain([0, 12]);
-        this.parentId = divId;
 
+        /*----------------------------------------  Data    ------------------------------------------*/
+        /// <field name="data" type="Object">Object containing all data </field>
+        this.data = {
+            /// <field type="Array">List of all unique locations </field>
+            location: [],
+            /// <field type="Array">List of all visits by time </field>
+            time: [],
+            /// <field type="Object">Distionary matching ids to map points </field>
+            locDict: {},
+            /// <field type="Array">List of all unique connections </field>
+            connections: []              
+        };
+        /// <field name="dayOfWeekFilter" type="Array">Filter for days of the week. Days in the filter 
+        /// (as integers) will not be displayed</field>
+        this.dayOfWeekFilter = [];
+        
+        /// <field type="Array">List of currently displayed locations </field>
+        this.displayedPoints = null;
+        /// <field type="Number">Timestamp of the start of displayed period</field>
         this.startTime = 0;
+        /// <field type="Number">Timestamp of the end of displayed period</field>
         this.endTime = 0;
 
-        this.refPoint1 = null;
-        this.refPoint2 = null;
+        /*--------------------------------------  Scales    ------------------------------------------*/
+        /// <field type="d3.scale">Scale for circle radii </field>
+        this.radiusScale = d3.scale.pow().exponent(0.3).range([4, 20]);
+        /// <field type="d3.scale">Scale for circle colors</field>
+        this.colorScale = d3.scale.linear().range(["#e80c7a", "#FFF500"]).domain([0, 12]).clamp(true);
+        /// <field type="d3.scale">Scale for connections stroke</field>
+        this.connScale = d3.scale.linear().range([0.35, 5]).domain([0, 20]).clamp(true); 
+        //(["#262626", "#B9D40B"] zielony,["#023E73", "#00AAB5"]niebieski   
+
+        /*------------------------------------  Map parameters    ------------------------------------*/
+        /// <field type="Object">First reference point to compute scale</field>                                                                              
+        this.refPoint1 = { lat: 55, lon: 56 };
+        /// <field type="Object">Second reference point to compute scale</field>                                                                          
+        this.refPoint2 = { lat: 56, lon: 56 };
+        /// <field type="Number">Euclidean distance between the reference points</field>                                                                           
         this.refDistance = 0;
+        /// <field type="Number">Current scale - proportion between the reference distance before and after 
+        /// zoom</field>                                                                            
+        this.scale = 1;
 
-        var n = Math.pow(2, 12);//zoom
-        var xtile = ((long + 180) / 360) * n
-        var ytile = (1 - (Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI)) / 2 * n
-
+        /*--------------------------------------  Constructor    -------------------------------------*/        
         this.map
             .add(po.interact())
             .add(po.image()
             .url(po.url("http://{S}tile.cloudmade.com"
             + "/b8dd6d159c1f4af48b74fc1a7c17a592"
-            + "/123211/256/{Z}/{X}/{Y}.png")
+            + "/77922/256/{Z}/{X}/{Y}.png")// + "/123211/256/{Z}/{X}/{Y}.png")
             .hosts(["a.", "b.", "c.", ""])));
         this.map.add(po.compass()
              .pan("none"));
-
-
+        
         d3.csv("data/newdata.csv", function (data) {
-
-            // Insert our layer beneath the compass.
-            chart.circleLayer = d3.select("svg").append("svg:g").attr("class", "vislayer");
-            chart.timelineLayer = d3.select("svg").append("svg:g").attr("class", "timeline").attr("transform", "translate(" + (document.getElementById(chart.parentId).offsetWidth - 50) + ",30)");
-            var staticGroup = d3.select("svg").append("svg:g").attr("class", "static").attr("transform", "translate(20," + (document.getElementById(chart.parentId).offsetHeight - 50) + ")");
-            chart.drawStatic(staticGroup);
-
-            chart.data = chart.filterPoints(data);
+            // Data has been loaded - initialize
+            chart.visLayer = d3.select(".map").insert("svg:g", ".compass").attr("class", "vislayer");
+            chart.visLayer.append("g").attr("class", "connectionLayer");
+            chart.visLayer.append("g").attr("class", "pointLayer");
+            chart.guiLayer = d3.select("svg").append("svg:g").attr("class", "gui");
+            chart.drawGui(chart.guiLayer);
+            
+            // Establishing initial time
+            chart.data = chart.filterPoints(data);            
             chart.startTime = (chart.data.time[0].start+chart.data.time[chart.data.time.length - 1].end)/2;
             chart.endTime = chart.data.time[chart.data.time.length - 1].end;
-            chart.timelineRef = new mobility_timeline(chart.timelineLayer, chart, chart.data.time[0].start, chart.data.time[chart.data.time.length - 1].end, chart.startTime);
-            chart.updatePoints();
-
-
+            chart.timelineRef = new mobility_timeline(chart.timelineLayer, chart, chart.data.time[0].start, chart.data.time[chart.data.time.length - 1].end, chart.startTime);           
+            
             // Whenever the map moves, update the marker positions.
-            chart.map.on("move", function () { chart.onMapMove(chart) });
+            chart.map.on("move", function () { chart.onMapMove() });
 
-            chart.initialZoom = chart.zoom = chart.map.zoom();
-            chart.refPoint1 = { lat: 55, lon: 56 };
-            chart.refPoint2 = { lat: 56, lon: 56 };
-            var p1 = chart.map.locationPoint(chart.refPoint1),
-                p2 = chart.map.locationPoint(chart.refPoint2);
-            chart.refDistance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+            // Begin
+            chart.updatePoints();
+            chart.updateConnections(1500, 0);
         });
 
 
-        this.map.center({ lat: 55.751849, lon: 12.535186 });
+        this.map.center({ lat: lat, lon: long});
 
     };
     mobility_map.prototype.updatePoints = function () {
-
+    	/// <summary>
+    	/// Updates the point according to time period
+    	/// </summary>
 
         var countDict = {};
+        // Count the number and time of visits in all point for this period in dictionary
         for (var i = 0; i < this.data.time.length; i++) {
+            var curDate = new Date(this.data.time[i].start);
             if (this.data.time[i].start > this.endTime)
                 break;
-            else if (this.data.time[i].start > this.startTime) {
+            else if (this.data.time[i].start > this.startTime && this.dayOfWeekFilter.indexOf(curDate.getDay()) == -1) {
                 if (countDict[this.data.time[i].id] == undefined)
                     countDict[this.data.time[i].id] = { time: this.data.time[i].end - this.data.time[i].start, count: 1 };
                 else {
@@ -92,6 +128,7 @@ var mobility_map = (function () {
                 }
             }
         }
+        // Move data from dictionary to Array
         for (var i = 0; i < this.data.location.length; i++)
             if (countDict[this.data.location[i].id] == undefined) {
                 this.data.location[i].count = 0;
@@ -102,68 +139,67 @@ var mobility_map = (function () {
                 this.data.location[i].time = (countDict[this.data.location[i].id].time)
             }
 
+        // Display only the points that have count > 0
         this.data.location.sort(function (a, b) { return b.count - a.count; });
         var slice = 0
         for (var i = 0; i < this.data.location.length; i++) {
             if (this.data.location[i].count == 0) break;
             this.data.location[i].time /= (this.data.location[i].count * 1000 * 60 * 60);
-            //this.data.location[i].time /= (1000 * 60 * 60);
             slice = i + 1;
         }
-        this.displayedData = this.data.location.slice(0, slice);
-
-
-
+        this.displayedPoints = this.data.location.slice(0, slice);
 
         this.drawPoints();
-
-        this.drawConnections(500,0);
-
     };
 
 
 
     mobility_map.prototype.drawPoints = function () {
+    	/// <summary>
+    	/// Draw the points onto the visualization layer
+    	/// </summary>
         var chart = this;
-        var layer = d3.select(".vislayer");
-        layer.selectAll("g").remove();
-        var marker = layer.selectAll(".locationPoint")
-             .data(this.displayedData, function (d) { return d.id });
+        var layer = d3.select(".pointLayer");
 
-        marker.exit().attr("r", 0).remove();
+        d3.select(".vislayer").selectAll(".connection").remove();
+        var marker = layer.selectAll(".locationPoint")
+             .data(this.displayedPoints, function (d) { return d.id });
+
+        // Remove the points that are no longer displayed
+        marker.exit().transition().attr("r", 0).remove();
 
         var newMarkers = marker.enter().append("svg:g").attr("class","locationPoint")
              .attr("transform", transform);
+
         // Add a circle.
         newMarkers.append("svg:circle")
             .attr("class", "location")
-            .attr("r", 0).style("fill-opacity", 0.7)
+            .attr("r", 0).style("fill-opacity", 0.9)
             .style("fill", this.colorScale(0))
-        .style("stroke", "#E80C7A").style("stroke-width", 2);
+            .style("stroke", "#E80C7A")
+            .style("stroke-width", 2)
+            .on("mouseover", function (d) { return chart.showDetails(d); })
+            .on("mouseout", function () { return chart.hideDetails(); });
 
-        newMarkers.append("svg:text")
-           .attr("class", "locationcount")
-            .text(function (d) { return d.count })
-            .style("fill", "#ffffff");
+        //newMarkers.append("svg:text")
+        //   .attr("class", "locationcount")
+        //    .text(function (d) { return d.count })
+        //    .style("fill", "#ffffff");
 
-        newMarkers.append("svg:text")
-           .attr("class", "locationtime")
-            .text(function (d) { return d.time })
-            .style("fill", "pink").attr("y", 20);
-        newMarkers.append("svg:text")
-           .attr("class", "locationid")
-            .text(function (d) { return d.id })
-            .style("fill", "blue").attr("y", -20);
+        //newMarkers.append("svg:text")
+        //   .attr("class", "locationtime")
+        //    .text(function (d) { return d.time })
+        //    .style("fill", "pink").attr("y", 20);
+        //newMarkers.append("svg:text")
+        //   .attr("class", "locationid")
+        //    .text(function (d) { return d.id })
+        //    .style("fill", "blue").attr("y", -20);
 
-        this.radiusScale.domain([d3.min(this.displayedData, function (d) {
+        this.radiusScale.domain([d3.min(this.displayedPoints, function (d) {
             return d.count;
-
-        }), d3.max(this.displayedData, function (d) {
+        }), d3.max(this.displayedPoints, function (d) {
             return d.count;
-
         })]);
-
-
 
         marker.selectAll("circle").transition().duration(100).attr("r", function (d) {
             return chart.radiusScale(d.count)
@@ -173,39 +209,75 @@ var mobility_map = (function () {
             return d3.rgb(chart.colorScale(d.time)).darker();
         });
 
-        d3.selectAll(".locationcount").text(function (d) { return d.count });
-        d3.selectAll(".locationtime").text(function (d) { return d.time });
-        d3.selectAll(".locationid").text(function (d) { return d.id });
+        //d3.selectAll(".locationcount").text(function (d) { return d.count });
+        //d3.selectAll(".locationtime").text(function (d) { return d.time });
+        //d3.selectAll(".locationid").text(function (d) { return d.id });
 
         function transform(d) {
             d = chart.map.locationPoint({ lon: d.lon, lat: d.lat });
             return "translate(" + d.x + "," + d.y + ")";
-        }
-        
+        }       
     };
    
 
 
-    mobility_map.prototype.drawConnections = function (speed,delay) {
+    mobility_map.prototype.updateConnections = function (speed, delay) {
+    	/// <summary>
+    	/// Update the connections data within the given time period
+    	/// </summary>
+    	/// <param name="speed", type="Number">Speed with which to draw the connections</param>
+    	/// <param name="delay" type="Number>Delay for drawing each of the connections</param>
         var delay = 0;
+        var p1 = this.map.locationPoint(this.refPoint1),
+            p2 = this.map.locationPoint(this.refPoint2);
+        this.refDistance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        this.scale = 1;
+        this.data.connections=[];
+
+        //Generate the connection objects
         for (var i = 0; i < this.data.time.length - 1; i++) {
+            var found = false;
+            var curDate = new Date(this.data.time[i].start);
+            var nextDate = new Date(this.data.time[i+1].start);
             if (this.data.time[i + 1].start > this.endTime)
                 break;
-            else if (this.data.time[i].start > this.startTime && this.data.time[i].id != this.data.time[i + 1].id)
-                this.drawConnection(this.data.locDict[this.data.time[i].id], this.data.locDict[this.data.time[i + 1].id],speed,i*delay);
-
+            else if (this.data.time[i].start > this.startTime && this.data.time[i].id != this.data.time[i + 1].id
+                && this.dayOfWeekFilter.indexOf(curDate.getDay()) == -1 && this.dayOfWeekFilter.indexOf(nextDate.getDay()) == -1) {
+                for (var j = 0; j < this.data.connections.length; j++)
+                {
+                    if (this.data.connections[j].from == this.data.time[i].id && this.data.connections[j].to == this.data.time[i + 1].id) {
+                        this.data.connections[j].score += 1;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    this.data.connections.push({ from: this.data.time[i].id, to: this.data.time[i + 1].id, tresholded: false, score: 1, tresholdedScore: 0 });
+            }
         }
-
+        //Run thresholding
+        this.tresholdEdges(0.6);
+        // ...and draw
+        for (var i = 0; i < this.data.connections.length ; i++) {
+            this.drawConnection(this.data.connections[i], speed, i * delay);
+        }
     };
 
 
-    mobility_map.prototype.drawConnection = function (pointA, pointB,speed,delay) {
+    mobility_map.prototype.drawConnection = function (connection, speed, delay) {
+    	/// <summary>
+    	/// Draw a single connection on the map
+    	/// </summary>
+    	/// <param name="connection" type="Object">Connection object</param>
+    	/// <param name="speed" type="Number">Speed with which to draw the curve</param>
+    	/// <param name="delay" type="Number>Delay before the curve drawing begins</param>
         var chart = this;
-        var parent = d3.select(".vislayer");
+        var pointA = this.data.locDict[connection.from];
+        var pointB = this.data.locDict[connection.to];
+        var parent = d3.select(".connectionLayer");
         var realA = chart.map.locationPoint(pointA);
-        var realB = chart.map.locationPoint(pointB);
-        
-
+        var realB = chart.map.locationPoint(pointB);        
+        //Get the perpendicular vector to the connection
         var perpendicular = { x: realB.y - realA.y, y: realB.x - realA.x };
         var perLength = Math.sqrt(Math.pow(perpendicular.x, 2) + Math.pow(perpendicular.y, 2));
         var vecLength = Math.sqrt(Math.pow(realB.x - realA.x, 2) + Math.pow(realB.y - realA.y, 2));
@@ -219,55 +291,51 @@ var mobility_map = (function () {
             return Math.random() * (max - min) + min;
         };
 
-
+        // Find the middle control point for the Bezier curve
         var midPoint = {
-            x: startPoint.x + (endPoint.x - startPoint.x) / 2 + vecLength / 5 * getRandom(0.2, 1) * perpendicular.x,
-            y: startPoint.y + (endPoint.y - startPoint.y) / 2 - vecLength / 5 * getRandom(0.2, 1) * perpendicular.y
+            x: startPoint.x + (endPoint.x - startPoint.x) / 2 + vecLength / 5 * getRandom(0.2, 0.5) * perpendicular.x,
+            y: startPoint.y + (endPoint.y - startPoint.y) / 2 - vecLength / 5 * getRandom(0.2, 0.5) * perpendicular.y
         };
-        //var midPoint2 = {
-        //    x: startPoint.x + (endPoint.x - startPoint.x) / 2 - vecLength / 10 * getRandom(5, 10) * perpendicular.x,
-        //    y: startPoint.y + (endPoint.y - startPoint.y) / 2 + vecLength / 10 * getRandom(5, 10) * perpendicular.y
-        //};
-
-        //d3.select(".vislayer").append("g").attr("transform", transform(pointA))
-        //    .append("line").attr("x1", midPoint.x).attr("y1", midPoint.y).attr("x2", midPoint2.x).attr("y2", midPoint2.y).style("stroke", "blue").style("stroke-width", "3px");
-
+        
         var t = 0,
             delta = .01,
-            padding = 10,
             points = [startPoint, midPoint,endPoint],
-            bezier = {},
+            bezier = null,
             line = d3.svg.line().x(x).y(y);
+        var connCount = connection.score;
 
         var pathGroup = parent
-            .append("svg:g").attr("id", "conn_" + pointA.id + "_" + pointB.id)
+            .append("svg:g").data([connection]).attr("id", "conn_" + pointA.id + "_" + pointB.id)
             .attr("class", "connection")
-            .attr("transform", transform(pointA));
-
-
+            .attr("transform", transform(pointA) + " scale(" + chart.scale + ")")
+            .style("opacity", function (d) {
+                if (d.tresholded)
+                    return "1";
+                else return "0";
+            }).style("fill", "none")
+            .style("stroke","#023E73")
+            .style("stroke-width", chart.connScale(connCount) * (1 / chart.scale) + "px");
+     
         var last = 0;
+        // Timer for drawing of the curve
         d3.timer(function (elapsed) {
             if (elapsed > delay) {
-                t = (t + (elapsed - delay - last) / speed);
+                t = (t + (elapsed - delay - last) / speed) ;
                 last = elapsed - delay;
                 update();
-                if (elapsed-delay >= speed*2)
+                if (elapsed-delay > speed)
                     return true;
             }
 
         });
 
         function update() {
+            // Update the drawing of the curve
             var curve = pathGroup.selectAll("path.curve");
-
-                curve.data(getCurve).enter().append("svg:path")
-                .attr("class", "curve")
-            .style("fill", "none")
-                .style("stroke", "red")
-            .style("stroke-width", "3px");
+            curve.data(getCurve).enter().append("svg:path")
+                .attr("class", "curve");
 
             curve.attr("d", line);
-
         }
 
         function interpolate(d, p) {
@@ -291,15 +359,15 @@ var mobility_map = (function () {
         }
 
         function getCurve() {
-            var curve = bezier[3];
+            var curve = bezier;
             if (!curve) {
-                curve = bezier[3] = [];
-                for (var t_ = 0; t_ <= 1; t_ += delta) {
-                    var x = getLevels(3, t_);
+                curve = bezier = [];
+                for (var t_ = 0; t_ <= 100; t_ += delta*100) {
+                    var x = getLevels(3, t_/100);
                     curve.push(x[x.length - 1][0]);
                 }
             }
-            return [curve.slice(0, t / delta + 1)];
+            return [curve.slice(0, t / delta +1)];
         }
 
         function x(d) { return d.x; }
@@ -312,63 +380,34 @@ var mobility_map = (function () {
 
     };
 
-    mobility_map.prototype.drawStatic = function (parent) {
+    mobility_map.prototype.drawGui = function (parent) {
+    	/// <summary>
+    	/// Draw the GUI layer
+    	/// </summary>
+    	/// <param name="parent">Parent container of the GUI layer</param>
+        this.timelineLayer = this.guiLayer.append("svg:g").attr("class", "timeline").attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",100)");
 
-
-        var gradient = parent
-            .append("linearGradient")
-            .attr("y1", 0)
-            .attr("y2", 0)
-            .attr("x1", 0)
-            .attr("x2", 300)
-            .attr("id", "gradient")
-            .attr("gradientUnits", "userSpaceOnUse");
-        gradient
-            .append("stop")
-            .attr("offset", "0")
-            .attr("stop-color", "#e80c7a");
-
-        gradient
-            .append("stop")
-            .attr("offset", "0.5")
-            .attr("stop-color", "#FFF500");
-
-        parent
-            .append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", 300)
-            .attr("height", 20)
-            .attr("fill", "url(#gradient)");
-
-        var ticks = parent.selectAll("line").data([0, 12, 24]).enter();
-        ticks.append("line")
-            .attr("x1", function (d, i) { return i * 150 })
-            .attr("y1", 20)
-            .attr("x2", function (d, i) { return i * 150 })
-            .attr("y2", 25).style("stroke", "white");
-        ticks.append("text").text(function (d) { return d })
-            .attr("x", function (d, i) { return (i * 150) - 7 })
-            .attr("y", 38)
-            .style("fill", "white");
-
+        this.gui = new mobility_gui(this.guiLayer, this);
     };
 
-
-    mobility_map.prototype.onMapMove = function (chart) {
-        chart.zoom = chart.map.zoom();
-
+    mobility_map.prototype.onMapMove = function () {
+    	/// <summary>
+    	/// Called whenever the map is moved/zoomed
+    	/// </summary>
+        var chart = this;
         var p1 = chart.map.locationPoint(chart.refPoint1),
             p2 = chart.map.locationPoint(chart.refPoint2);
         var newRefDistance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        chart.scale = newRefDistance / chart.refDistance;
 
         d3.select(".vislayer").selectAll(".locationPoint").attr("transform", transform);
         d3.select(".vislayer").selectAll(".connection").attr("transform", function () {
-            var id = +(this.getAttribute("id").split("_")[1]);
-            var scale = newRefDistance / chart.refDistance;
+            var id = +(this.getAttribute("id").split("_")[1]);           
+            return transform(chart.data.locDict[id])+ " scale(" + chart.scale + ")";
+        });
+        d3.select(".vislayer").selectAll(".connection").style("stroke-width", function (e) {
+            return chart.connScale(e.score) * (1/chart.scale) + "px";
 
-            
-            return transform(chart.data.locDict[id])+ " scale(" + scale + ")";
         });
         function transform(d) {
             d = chart.map.locationPoint({ lon: d.lon, lat: d.lat });
@@ -378,6 +417,11 @@ var mobility_map = (function () {
 
 
     mobility_map.prototype.filterPoints = function (data) {
+    	/// <summary>
+    	/// Filters and clusters raw data point
+    	/// </summary>
+    	/// <param name="data">Raw data</param>
+    	/// <returns type="Object">Filtered data containing unique points, time data and point dictionary</returns>
         var chart = this;
         var filteredData = [];
         var timeData = [];
@@ -387,10 +431,8 @@ var mobility_map = (function () {
         //grouping pois with the same ID
         
         for (var i = 0; i < data.length; i++) {
-            if (dict[data[i].id] == undefined) {
+            if (dict[data[i].id] == undefined) 
                 dict[data[i].id] = [data[i]];
-                
-            }
             else
                 dict[data[i].id].push(data[i])
             timeData.push({ id: data[i].id, start: data[i].arrival * 1000, end: data[i].departure * 1000 });
@@ -404,9 +446,7 @@ var mobility_map = (function () {
                 count: 0,
                 time: 0,
                 id: id
-                // visits: point.map(function (d) { return { start: d.arrival, end: d.departure } })
             };
-
             locDict[id] = averagePoint;
             filteredData.push(averagePoint);
         }
@@ -417,12 +457,42 @@ var mobility_map = (function () {
     };
 
     mobility_map.prototype.updateTime = function (start, end) {
+    	/// <summary>
+    	/// Change displayed time period. Event handler for timeline's brush event
+    	/// </summary>
+    	/// <param name="start">Begining of new time period</param>
+    	/// <param name="end">End of time period</param>
         this.startTime = start;
         this.endTime = end;
         this.updatePoints();
     };
 
+    mobility_map.prototype.updateTimeEnd = function () {
+    	/// <summary>
+        /// Change displayed time period. Event handler for timeline's brushend event
+    	/// </summary>
+        this.updateConnections(1500, 0);
+    };
+
+    mobility_map.prototype.updateDayOfWeekFilter = function (filter) {
+    	/// <summary>
+    	/// TODO
+    	/// </summary>
+    	/// <param name="addNotRemove"></param>
+    	/// <param name="filter"></param>
+        if (this.dayOfWeekFilter.indexOf(filter) != -1)
+            this.dayOfWeekFilter.splice(this.dayOfWeekFilter.indexOf(filter), 1);
+        else
+            this.dayOfWeekFilter.push(filter);
+
+        this.updatePoints();
+        this.updateConnections(1500, 0);
+    };
+
     mobility_map.prototype.timeTick = function () {
+    	/// <summary>
+    	/// Advance period by one day
+    	/// </summary>
         this.startTime += 1000 * 60 * 60 * 24;
         this.endTime += 1000 * 60 * 60 * 24;
         this.updatePoints();
@@ -431,10 +501,125 @@ var mobility_map = (function () {
 
 
     mobility_map.prototype.redraw = function () {
+    	/// <summary>
+    	/// Handles browser window resizing
+    	/// </summary>
         var chart = this;
-        this.onMapMove(chart);
-        this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",30)");
+        this.onMapMove();
+        this.gui.update();
+        this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",100)");
     };
+
+
+    mobility_map.prototype.showDetails = function (d) {
+    	/// <summary>
+    	/// Displays details for given location
+    	/// </summary>
+    	/// <param name="d">The given location</param>
+        var chart = this;
+        this.visLayer.select(".connectionLayer").selectAll(".connection")
+            .transition()
+            .style("opacity", function (e) {
+                if (e.from == d.id || e.to == d.id)
+                    return "1";
+                else
+                    return "0";
+            });
+        this.gui.drawScaleTick(d.time);
+
+    };
+
+    mobility_map.prototype.hideDetails = function () {
+    	/// <summary>
+        /// Hides details for a location
+    	/// </summary>
+        var chart = this;
+        this.visLayer.select(".connectionLayer").selectAll(".connection").transition()
+            .style("opacity", function (e) {
+                if (e.tresholded)
+                    return "1";
+                else return "0";
+            });
+      
+        this.gui.removeScaleTick();
+    };
+
+
+
+    mobility_map.prototype.tresholdEdges = function (alpha) {
+    	/// <summary>
+        /// Thresholds the edges of connection network using algorithms from Serrano et al. 
+        /// "Extracting the multiscale backbone of complex weighted network"
+    	/// </summary>
+    	/// <param name="alpha"></param>
+        var nodes = this.data.location;
+        var edges = this.data.connections;
+
+        var __degree = function (edges, node, weighted) {
+            var result = 0;
+            for (var i = 0; i < edges.length; i++) {
+                if (edges[i].from == node || edges[i].to == node)
+                    result += weighted ? edges[i].score : 1;
+            };
+            return result;
+        };
+        var __nbs = function (edges, node) {
+            var result = [];
+            for (var i = 0; i < edges.length; i++) {
+                if (edges[i].from == node)
+                    result.push({ nb: edges[i].to, score: edges[i].score });
+            };
+            return result;
+        };
+        // integral of (1-x)^(k_n-2)
+        var integral = function (x) {
+            return -(Math.pow(1 - x, k_n - 1) / k_n - 1);
+        };
+
+
+        var tresholdedEdges = [];
+
+
+        for (var i = 0; i < nodes.length; i++) {
+            var k_n = __degree(edges, nodes[i].id, false);
+            if (k_n > 1) {
+                var sum_w = __degree(edges, nodes[i].id, true);
+                var nbs = __nbs(edges, nodes[i].id);
+
+                for (var j = 0; j < nbs.length; j++) {
+                    var edgeW = nbs[j].score;
+                    var p_ij = edgeW / sum_w;
+                    var alpha_ij = 1 - (k_n - 1) * (integral(p_ij) - integral(0));
+                    if (alpha_ij < alpha) {
+                        var found = false;
+                        for (var e = 0; e < tresholdedEdges.length; e++) {
+                            if (tresholdedEdges[e].from == nbs[j].nb && tresholdedEdges[e].to == nodes[i].id)
+                                found = true;
+                        }
+                        if (!found)
+                            tresholdedEdges.push({
+                                from: nodes[i].id,
+                                to: nbs[j].nb,
+                                score: nbs[j].score
+                            });
+
+                    }
+                }
+            }
+        }
+        for (var i = 0; i < tresholdedEdges.length; i++) {
+            for (var j = 0; j < edges.length; j++) {
+                if (tresholdedEdges[i].from == edges[j].from && tresholdedEdges[i].to == edges[j].to) {
+                    edges[j].tresholded = true;
+                    edges[j].score = tresholdedEdges[i].score;
+                    break;
+                }
+
+            }
+        }
+    };
+
+  
 
     return mobility_map;
 

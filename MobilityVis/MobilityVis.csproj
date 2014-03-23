@@ -48,6 +48,7 @@
     <Content Include="lib\clusterfck\clusterfck-0.1.js" />
     <Content Include="lib\d3.v3\d3.v3.js" />
     <Content Include="lib\d3.v3\d3.v3.min.js" />
+    <Content Include="lib\mobility-vis\mobility-gui.js" />
     <Content Include="lib\mobility-vis\mobility-timeline.js" />
     <Content Include="lib\mobility-vis\mobility-map.js" />
     <Content Include="lib\mobility-vis\mobility-vis.js" />

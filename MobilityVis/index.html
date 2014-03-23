@@ -6,6 +6,7 @@
     <script src="lib/polymaps/polymaps.js"></script>
     <script src="lib/mobility-vis/mobility-timeline.js"></script>
     <script src="lib/mobility-vis/mobility-map.js"></script>
+    <script src="lib/mobility-vis/mobility-gui.js"></script>
     <script src="lib/jquery/jquery.min.js"></script>
     <script src="lib/clusterfck/clusterfck-0.1.js"></script>
     <script>
@@ -15,8 +16,8 @@
 
         $(document).ready(function () {
             po = org.polymaps;
-
-            mmap = new mobility_map("vismap");
+            
+            mmap = new mobility_map("vismap", 55.751849, 12.535186);
             $(window).resize(function () { mmap.redraw() });
         })
     </script>

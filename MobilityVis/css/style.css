@@ -170,7 +170,12 @@ div#map {
   fill-opacity: .8;
 }
 
-
+.buttonText {
+    stroke: none;
+    stroke-width: 0px;
+    font-size:14px;
+    font-weight: bold
+}
 .compass .fore {
   stroke: #999;
   stroke-width: 1.5px;
