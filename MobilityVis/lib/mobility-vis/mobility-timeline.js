@@ -17,7 +17,7 @@ var mobility_timeline = (function () {
         this.currentStartTime = currentStart;
         this.currentEndTime = 0;
         this.currentTime = 0;
-        this.bubble = "0,0 54,0 54,5 68,9 54,11 54,15 0,15 0,0";
+        this.bubble = "0,0 54,0 68,9 54,15 0,15 0,0";
         this.play = "M 0,0 L0,20 L20,10 L0,0";
         this.stop = "M0,0 L0,20 L7,20 L7,0 L0,0 M0,0 M15,20 L22,20 L22,0 L15,0 L15,20";
         this.yScale = null;
@@ -36,6 +36,15 @@ var mobility_timeline = (function () {
         { label: "SAT", dy: "0.6em", dx: "0.1em", translate: "-40,-30", clicked: false },
         ];
         
+
+        this.partOfDayPie = "M 0,0 L-40,-40 Q 0,-75 40,-40 L0,0";
+        this.partOfDayData = [{ label: "Night", translate: "-30,-30", clicked: false ,index: 0},
+        { label: "Morning",  translate: "10,0", clicked: false,index:1 },
+        { label: "Afternoon", translate: "-20,30", clicked: false, index:2},
+        { label: "Evening",  translate: "-50,0", clicked: false,index:3 }
+       
+        ];
+
         this.drawTimeline();
     };
 
@@ -51,15 +60,16 @@ var mobility_timeline = (function () {
         
       
         this.parent.append("rect")
-       .attr("rx", 6)
-       .attr("ry", 6)
+       //.attr("rx", 6)
+       //.attr("ry", 6)
        .attr("x", 0)
        .attr("y", 0)
        .attr("width", 24)
        .attr("height", 500)
-       .attr("class", "timeline");
+       .attr("class", "timeline box");
 
-        this.parent.append("line").attr("x1", 12).attr("y1", 10).attr("x2", 12).attr("y2", 490);
+        this.parent.append("line").attr("x1", 12).attr("y1", 10).attr("x2", 12).attr("y2", 490)
+            .style("stroke", "#000000").style("stroke-width", "1px");
         var gBrush = this.parent.append("g").call(this.brush);
         gBrush.selectAll("rect").attr("x", 6).attr("width", 12).style("fill", "#E80C7A").style("fill-opacity",0.8);
         gBrush.selectAll(".resize").append("path").attr("d", resizePath).attr("transform", "translate(30,0) rotate(90)");
@@ -83,7 +93,7 @@ var mobility_timeline = (function () {
                 + "M" + (4.5 * x) + "," + (y + 8)
                 + "V" + (2 * y - 8);
         }
-        var weekButtonsGrp = this.parent.append("g").attr("class", "weekButtons").attr("transform", "translate(12,-50) scale(0.7)");
+        var weekButtonsGrp = this.parent.append("g").attr("class", "weekButtons box").attr("transform", "translate(12,-50) scale(0.7)");
         var weekButtons = weekButtonsGrp.selectAll("g").data(this.weekData).enter().append("g").attr("class", "weekButton")
         .on("click", function(d,i) {
             that.visRef.updateDayOfWeekFilter(i);
@@ -111,11 +121,40 @@ var mobility_timeline = (function () {
             .text(function (e) { return e; })
             .attr("dy", d.dy )
             .attr((d.label != "SUN") ? "dx" : "x", (d.label != "SUN") ? d.dx : 0);
-        });;
+        });
 
+        var partOfDayButtonsGrp = this.parent.append("g").attr("class", "partOfDayButtons box").attr("transform", "translate(-100,-50) scale(0.7)");
+        var partOfDayButtons = partOfDayButtonsGrp.selectAll("g").data(this.partOfDayData).enter().append("g").attr("class", "partOfDayButton")
+        .on("click", function (d, i) {
+            if (d.index == 0) {
+                that.visRef.updateTimeofDayFilter(d.index);
+                that.visRef.updateTimeofDayFilter(4);
+            }
+            else that.visRef.updateTimeofDayFilter(i);
+            d.clicked = !d.clicked;
+            d3.select(this).select("path").style("fill", function (d) { if (d.clicked) return "#999999"; else return "#eeeeee"; });
+        });
+
+        partOfDayButtons
+            .append("path")
+            .attr("d", function () {
+                return that.partOfDayPie
+            })
+            .attr("transform", function (d, i) { return " rotate(" + i * 90+ ")" });
+
+        partOfDayButtons.append("text").text(function (d) { return d.label; })
+
+                 .attr("class", "partOfDayText")
+                 .attr("x", 0)
+                 .attr("y", 0)
+                 .attr("transform", function (d) { return "translate(" + d.translate + ")" })
+                 .style("fill", "rgb(42, 42, 42)")
+                 .style("font-family", "Courier New")
+                 .style("font-size", "12px");
+        ///--
 
          this.parent.append("path").attr("d", this.play ).attr("transform", "translate(0,515)")
-             .attr("class", "playbutton").on("click", function () {
+             .attr("class", "playbutton box").on("click", function () {
              if (!that.playing && !that.pause) {
                  that.startPlaying();
                  

@@ -78,16 +78,22 @@ var mobility_map = (function () {
         /// zoom</field>                                                                            
         this.scale = 1;
 
+        /*----------------------------------------- Control ------------------------------------------*/
+        this.detailView = false;
+
         /*--------------------------------------  Constructor    -------------------------------------*/        
         this.map
             .add(po.interact())
             .add(po.image()
-            .url(po.url("http://{S}tile.cloudmade.com"
-            + "/b8dd6d159c1f4af48b74fc1a7c17a592"
-            + "/77922/256/{Z}/{X}/{Y}.png")// + "/123211/256/{Z}/{X}/{Y}.png")
-            .hosts(["a.", "b.", "c.", ""])));
-        this.map.add(po.compass()
-             .pan("none"));
+            //.url(po.url("http://{S}tile.cloudmade.com"
+            //+ "/b8dd6d159c1f4af48b74fc1a7c17a592"
+            //+ "/77922/256/{Z}/{X}/{Y}.png")// + "/123211/256/{Z}/{X}/{Y}.png")
+            .url(po.url("http://{S}www.toolserver.org/tiles/bw-mapnik/{Z}/{X}/{Y}.png")
+
+          //  "http://{S}tile.openstreetmap.org" + "/{Z}/{X}/{Y}.png")
+          .hosts(["a.","b.","c.",""])));
+        //this.map.add(po.compass()
+        //     .pan("none"));
         
         d3.csv("data/newdata.csv", function (data) {
             // Data has been loaded - initialize
@@ -169,6 +175,60 @@ var mobility_map = (function () {
 
     };
 
+    mobility_map.prototype.bucketData = function (start, end) {
+        var filteredPeriods = [[], [], [], [], [], [], []];
+        var finalFilteredPeriods = [];
+        var finalPeriod = 0;
+        var bucketedData
+
+        var noOfDays = (end - start) / (1000 * 60 * 60 * 24);
+        var currDay = new Date(start);
+
+        do {
+            var periodStart = Math.max(currDay.setHours(0, 0, 0, 0), start);
+            var periodEnd = Math.min(currDay.setHours(23, 59, 59, 999), end);
+
+            filteredPeriods[(currDay.getDay() + 6) % 7].push({ from: periodStart, to: periodEnd });
+            currDay.setDate(currDay.getDate() + 1);
+
+        } while (periodEnd < end);
+
+        var startFound = false;
+        for (var day = 0; day < 7; day++) {
+            for (var i = 0; i < filteredPeriods[day].length; i++) {
+                currDay = new Date(filteredPeriods[day][i].from);
+                var j = 0;
+                do {
+                    var periodStart = Math.max(currDay.setHours(this.timeOfDayFilter[j].from, 0, 0, 0), start);
+                    var periodEnd = Math.min(currDay.setHours(this.timeOfDayFilter[j].to - 1, 59, 59, 999), end);
+
+                    if (!startFound && start > currDay.setHours(this.timeOfDayFilter[j].from, 0, 0, 0) && start < currDay.setHours(this.timeOfDayFilter[j].to, 0, 0, 0))
+                        startFound = true;
+                    else if (!startFound) {
+                        j++;
+                        continue;
+                    }
+
+                    this.bucketedData[day].timeBucket[(j + 3) % 4].total += (periodEnd - periodStart) / (1000 * 60 * 60);
+                    this.bucketedData[day].timeBucket[(j + 3) % 4].count++;
+                    this.bucketedData[day].total += (periodEnd - periodStart) / (1000 * 60 * 60);
+
+                    j++;
+
+                } while (j < this.timeOfDayFilter.length && periodEnd < end)
+            }
+        }
+
+        for (var i = 0; i < this.bucketedData.length; i++) {
+            for (var j = 0; j < this.bucketedData[i].timeBucket.length - 1; j++) {
+                this.bucketedData[i].timeBucket[j].avg = this.bucketedData[i].timeBucket[j].total / (this.timeOfDayFilter[j + 1].to - this.timeOfDayFilter[j + 1].from);
+            }
+            this.bucketedData[i].timeBucket[j].avg = this.bucketedData[i].timeBucket[j].total / ((this.timeOfDayFilter[j + 1].to - this.timeOfDayFilter[j + 1].from) + (this.timeOfDayFilter[0].to - this.timeOfDayFilter[0].from));
+        }
+
+
+    };
+
 
 
     mobility_map.prototype.updatePoints = function (animatedTick) {
@@ -188,12 +248,15 @@ var mobility_map = (function () {
                 var filteredPeriod = this.applyFilters(this.data.time[i].start, this.data.time[i].end);
                 if (filteredPeriod > 0) {
                     if (countDict[this.data.time[i].id] == undefined)
-                        countDict[this.data.time[i].id] = { time: filteredPeriod, count: 1 };
+                        countDict[this.data.time[i].id] = { time: filteredPeriod, count: 1, visits: [] };
                     else {
                         countDict[this.data.time[i].id].time += filteredPeriod;
                         countDict[this.data.time[i].id].count += 1;
                     }
+                    
                 }
+
+                countDict[this.data.time[i].id].visits.push(this.data.time[i]);
             }
         }
         // Move data from dictionary to Array
@@ -201,10 +264,12 @@ var mobility_map = (function () {
             if (countDict[this.data.location[i].id] == undefined && !animatedTick) {
                 this.data.location[i].count = 0;
                 this.data.location[i].time = 0;
+                this.data.location[i].visits = [];
             }
             else if(!animatedTick){
                 this.data.location[i].count = (countDict[this.data.location[i].id].count);
-                this.data.location[i].time = (countDict[this.data.location[i].id].time)
+                this.data.location[i].time = (countDict[this.data.location[i].id].time);
+                this.data.location[i].visits = (countDict[this.data.location[i].id].visits);
             }
             else if (countDict[this.data.location[i].id] != undefined && animatedTick) {
                 this.data.location[i].count += (countDict[this.data.location[i].id].count);
@@ -217,6 +282,7 @@ var mobility_map = (function () {
             var slice = 0
             for (var i = 0; i < this.data.location.length; i++) {
                 if (this.data.location[i].count == 0) break;
+                this.data.location[i].totalTime = this.data.location[i].time / (1000 * 60 * 60);
                 this.data.location[i].time /= (this.data.location[i].count * 1000 * 60 * 60);
                 slice = i + 1;
             }
@@ -253,9 +319,9 @@ var mobility_map = (function () {
             .style("fill", this.colorScale(0))
             .style("stroke", "#E80C7A")
             .style("stroke-width", 2)
-            .on("mouseover", function (d) { return chart.showDetails(d); })
-            .on("mouseout", function () { return chart.hideDetails(); });
-
+            .on("mouseover", function (d) { if(!chart.detailView) chart.hoverDetails(d); })
+            .on("mouseout", function () { if (!chart.detailView) return chart.hideHoverDetails(); })
+            .on("click", function (d) {return chart.showDetails(d); });
         //newMarkers.append("svg:text")
         //   .attr("class", "locationcount")
         //    .text(function (d) { return d.count })
@@ -605,12 +671,11 @@ var mobility_map = (function () {
         this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",100)");
     };
 
-
-    mobility_map.prototype.showDetails = function (d) {
-    	/// <summary>
-    	/// Displays details for given location
-    	/// </summary>
-    	/// <param name="d">The given location</param>
+    mobility_map.prototype.hoverDetails = function (d) {
+        /// <summary>
+        /// Displays details for given location
+        /// </summary>
+        /// <param name="d">The given location</param>
         var chart = this;
         this.visLayer.select(".connectionLayer").selectAll(".connection")
             .transition()
@@ -620,14 +685,17 @@ var mobility_map = (function () {
                 else
                     return "0";
             });
+
+        
+
         this.gui.drawScaleTick(d.time);
 
     };
 
-    mobility_map.prototype.hideDetails = function () {
-    	/// <summary>
+    mobility_map.prototype.hideHoverDetails = function () {
+        /// <summary>
         /// Hides details for a location
-    	/// </summary>
+        /// </summary>
         var chart = this;
         this.visLayer.select(".connectionLayer").selectAll(".connection").transition()
             .style("opacity", function (e) {
@@ -635,8 +703,42 @@ var mobility_map = (function () {
                     return "1";
                 else return "0";
             });
-      
+
         this.gui.removeScaleTick();
+
+    };
+
+    mobility_map.prototype.showDetails = function (d) {
+    	/// <summary>
+    	/// Displays details for given location
+    	/// </summary>
+        /// <param name="d">The given location</param>
+        var chart = this;
+        this.hideDetails();
+        this.hoverDetails(d);
+        this.detailView = true;
+
+        var currPos = this.map.center();
+        var curMultiplier = 0.1;
+
+        d3.timer(function () {
+            chart.map.center({ lat: currPos.lat + ((d.lat - currPos.lat) * curMultiplier), lon: currPos.lon + ((d.lon - currPos.lon) * curMultiplier) });
+            curMultiplier += 0.1;
+            if (curMultiplier >= 1)
+                return true;
+        });
+
+        this.gui.showDetailFrame(d);
+        
+    };
+
+    mobility_map.prototype.hideDetails = function () {
+    	/// <summary>
+    	/// TODO
+        /// </summary>
+        this.detailView = false;
+        this.hideHoverDetails();
+        this.gui.hideDetailFrame();
     };
 
 
