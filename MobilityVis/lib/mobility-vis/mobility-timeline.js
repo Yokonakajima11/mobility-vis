@@ -26,26 +26,9 @@ var mobility_timeline = (function () {
 
         this.playing = false;
         this.pause = false;
-        this.weekPie = "M 0,0 L-23.75,-50 Q 0,-60 23.75,-50 L0,0";
-        this.weekData = [{ label: "SUN", dy: "0.9em", dx: "-0.55em", translate: "-5,-50", clicked: false },
-        { label: "MON", dy: "-0.6em", dx: "0.1em", translate: "12,-2", clicked: false },
-        { label: "TUE", dy: "0.3em", dx: "0.3em", translate: "15,6", clicked: false },
-        { label: "WED", dy: "0.9em", dx: "-0.1em", translate: "5,15", clicked: false },
-        { label: "THU", dy: "-0.9em", dx: "0.1em", translate: "-28,55", clicked: false },
-        { label: "FRI", dy: "-0.3em", dx: "0.3em", translate: "-48,20", clicked: false },
-        { label: "SAT", dy: "0.6em", dx: "0.1em", translate: "-40,-30", clicked: false },
-        ];
-        
-
-        this.partOfDayPie = "M 0,0 L-40,-40 Q 0,-75 40,-40 L0,0";
-        this.partOfDayData = [{ label: "Night", translate: "-30,-30", clicked: false ,index: 0},
-        { label: "Morning",  translate: "10,0", clicked: false,index:1 },
-        { label: "Afternoon", translate: "-20,30", clicked: false, index:2},
-        { label: "Evening",  translate: "-50,0", clicked: false,index:3 }
        
-        ];
 
-        this.drawTimeline();
+        //this.drawTimeline();
     };
 
     mobility_timeline.prototype.drawTimeline = function () {
@@ -66,7 +49,7 @@ var mobility_timeline = (function () {
        .attr("y", 0)
        .attr("width", 24)
        .attr("height", 500)
-       .attr("class", "timeline box");
+       .attr("class", "timeline tile");
 
         this.parent.append("line").attr("x1", 12).attr("y1", 10).attr("x2", 12).attr("y2", 490)
             .style("stroke", "#000000").style("stroke-width", "1px");
@@ -93,68 +76,69 @@ var mobility_timeline = (function () {
                 + "M" + (4.5 * x) + "," + (y + 8)
                 + "V" + (2 * y - 8);
         }
-        var weekButtonsGrp = this.parent.append("g").attr("class", "weekButtons box").attr("transform", "translate(12,-50) scale(0.7)");
-        var weekButtons = weekButtonsGrp.selectAll("g").data(this.weekData).enter().append("g").attr("class", "weekButton")
-        .on("click", function(d,i) {
-            that.visRef.updateDayOfWeekFilter(i);
-            d.clicked = !d.clicked;
-            d3.select(this).select("path").style("fill", function (d) { if (d.clicked) return "#999999"; else return "#eeeeee"; });
-        });
+        //var weekButtonsGrp = this.parent.append("g").attr("class", "weekButtons box").attr("transform", "translate(12,-50) scale(0.7)");
+        //var weekButtons = weekButtonsGrp.selectAll("g").data(this.weekData).enter().append("g").attr("class", "weekButton")
+        //.on("click", function(d,i) {
+        //    that.visRef.updateDayOfWeekFilter(i);
+        //    d.clicked = !d.clicked;
+        //    d3.select(this).select("path").style("fill", function (d) { if (d.clicked) return "#999999"; else return "#eeeeee"; });
+        //});
 
-        weekButtons
-            .append("path")
-            .attr("d", function () {
-                return that.weekPie
-            })
-            .attr("transform", function (d,i) { return " rotate(" + i * 51.4 + ")" });
+        //weekButtons
+        //    .append("path")
+        //    .attr("d", function () {
+        //        return that.weekPie
+        //    })
+        //    .attr("transform", function (d,i) { return " rotate(" + i * 51.4 + ")" });
 
-        weekButtons.each(function(d) {
-            d3.select(this).append("text").attr("class","buttonText")
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("transform", "translate(" + d.translate + ")")
-                .style("fill", "rgb(42, 42, 42)")
-                .style("font-family", "Courier New")
-                .style("font-size", "12px")
-                .selectAll("tspan").data(d.label.split("")).enter()
-                .append("tspan")
-            .text(function (e) { return e; })
-            .attr("dy", d.dy )
-            .attr((d.label != "SUN") ? "dx" : "x", (d.label != "SUN") ? d.dx : 0);
-        });
+        //weekButtons.each(function(d) {
+        //    d3.select(this).append("text").attr("class","buttonText")
+        //        .attr("x", 0)
+        //        .attr("y", 0)
+        //        .attr("transform", "translate(" + d.translate + ")")
+        //        .style("fill", "rgb(42, 42, 42)")
+        //        .style("font-family", "Courier New")
+        //        .style("font-size", "12px")
+        //        .selectAll("tspan").data(d.label.split("")).enter()
+        //        .append("tspan")
+        //    .text(function (e) { return e; })
+        //    .attr("dy", d.dy )
+        //    .attr((d.label != "SUN") ? "dx" : "x", (d.label != "SUN") ? d.dx : 0);
+        //});
 
-        var partOfDayButtonsGrp = this.parent.append("g").attr("class", "partOfDayButtons box").attr("transform", "translate(-100,-50) scale(0.7)");
-        var partOfDayButtons = partOfDayButtonsGrp.selectAll("g").data(this.partOfDayData).enter().append("g").attr("class", "partOfDayButton")
-        .on("click", function (d, i) {
-            if (d.index == 0) {
-                that.visRef.updateTimeofDayFilter(d.index);
-                that.visRef.updateTimeofDayFilter(4);
-            }
-            else that.visRef.updateTimeofDayFilter(i);
-            d.clicked = !d.clicked;
-            d3.select(this).select("path").style("fill", function (d) { if (d.clicked) return "#999999"; else return "#eeeeee"; });
-        });
+        //var partOfDayButtonsGrp = this.parent.append("g").attr("class", "partOfDayButtons box").attr("transform", "translate(-100,-50) scale(0.7)");
+        //var partOfDayButtons = partOfDayButtonsGrp.selectAll("g").data(this.partOfDayData).enter().append("g").attr("class", "partOfDayButton")
+        //.on("click", function (d, i) {
+        //    if (d.index == 0) {
+        //        that.visRef.updateTimeofDayFilter(d.index);
+        //        that.visRef.updateTimeofDayFilter(4);
+        //    }
+        //    else that.visRef.updateTimeofDayFilter(i);
+        //    d.clicked = !d.clicked;
+        //    d3.select(this).select("path").style("fill", function (d) { if (d.clicked) return "#999999"; else return "#eeeeee"; });
+        //});
 
-        partOfDayButtons
-            .append("path")
-            .attr("d", function () {
-                return that.partOfDayPie
-            })
-            .attr("transform", function (d, i) { return " rotate(" + i * 90+ ")" });
+        //partOfDayButtons
+        //    .append("path")
+        //    .attr("d", function () {
+        //        return that.partOfDayPie
+        //    })
+        //    .attr("transform", function (d, i) { return " rotate(" + i * 90+ ")" });
 
-        partOfDayButtons.append("text").text(function (d) { return d.label; })
+        //partOfDayButtons.append("text").text(function (d) { return d.label; })
 
-                 .attr("class", "partOfDayText")
-                 .attr("x", 0)
-                 .attr("y", 0)
-                 .attr("transform", function (d) { return "translate(" + d.translate + ")" })
-                 .style("fill", "rgb(42, 42, 42)")
-                 .style("font-family", "Courier New")
-                 .style("font-size", "12px");
+        //         .attr("class", "partOfDayText")
+        //         .attr("x", 0)
+        //         .attr("y", 0)
+        //         .attr("transform", function (d) { return "translate(" + d.translate + ")" })
+        //         .style("fill", "rgb(42, 42, 42)")
+        //         .style("font-family", "Courier New")
+        //         .style("font-size", "12px");
         ///--
+        
 
          this.parent.append("path").attr("d", this.play ).attr("transform", "translate(0,515)")
-             .attr("class", "playbutton box").on("click", function () {
+             .attr("class", "playbutton tile").on("click", function () {
              if (!that.playing && !that.pause) {
                  that.startPlaying();
                  

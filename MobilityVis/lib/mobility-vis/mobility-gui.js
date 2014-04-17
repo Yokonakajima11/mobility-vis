@@ -7,33 +7,77 @@
 var mobility_gui = (function () {
 
     function mobility_gui(parenContainer, visRef) {
-        /// <param name="visRef" type="mobility_map"></param>
-        /// <field name="visRef" type="mobility_map"></param>
+        /// <summary>
+        /// Constructor for the GUI layer
+        /// </summary>
+        /// <param name="parenContainer">Container (SVG) holding the GUI</param>
+        /// <param name="visRef" type="mobility_map">Reference to the visualization</param>
 
+        /*-------------------------------------  References    ---------------------------------------*/
+        // <field name="parent" type="d3.selection()">Parent container selection</field>
         this.parent = parenContainer;
+        /// <field name="visRef" type="mobility_map">Reference to the main visualization</param>
         this.visRef = visRef;
+        // <field name="vis" type="String">Parent container ID of the visualization</field>
         this.parentId = visRef.parentId;
+        // <field name="currentTooltip" type="mobility_tooltip">Currently opened details frame</field>
         this.currentTooltip = null;
 
+        /*---------------------------------------  Control    -----------------------------------------*/
+        this.menuExpanded = false;
 
+        /*----------------------------------------  Data    ------------------------------------------*/
+        /// <field name="weekData" type="Array">Data for days of week filter menu</field>
+        this.weekData = [{ label: "Monday", clicked: false },
+                         { label: "Tuesday", clicked: false },
+                         { label: "Wednesday", clicked: false },
+                         { label: "Thursday", clicked: false },
+                         { label: "Friday", clicked: false },
+                         { label: "Saturday", clicked: false },
+                         { label: "Sunday", clicked: false }
+        ];
+        /// <field name="partOfDayData" type="Array">Data for times of day filter menu</field>
+        this.partOfDayData = [{ label: "Dusk", clicked: false },
+                              { label: "Morning", clicked: false },
+                              { label: "Afternoon", clicked: false },
+                              { label: "Evening", clicked: false },
+                              { label: "Night", clicked: false }
+        ];
+        /// <field name="colorScale" type="d3.scale">Scale for coloring the scale</field>
         this.colorScale = d3.scale.linear().range([0, 300]).domain([0, 24]).clamp(true);
 
+        /*--------------------------------------  Constructor    -------------------------------------*/
         this.drawCopyright();
-        this.draw();
+        this.drawScale();
+        this.drawMenus();
+
     };
+    /*---------------------------------------------------------------------  Scale methods    ---------------------------------------------------------------------*/
 
-    mobility_gui.prototype.draw = function () {
-
+    mobility_gui.prototype.drawScale = function () {
+    	/// <summary>
+    	/// Draw the color scale
+    	/// </summary>
+        var that = this;
         var scaleGrp = this.parent.append("g")
             .attr("class", "scale")
-            .attr("transform", "translate(20," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+            .attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 70) + ")");
+
+        scaleGrp.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", 320)
+            .attr("height", 40)
+            .attr("class", "tile");
+
         var gradient = scaleGrp.append("linearGradient")
             .attr("y1", 0)
             .attr("y2", 0)
-            .attr("x1", 0)
-            .attr("x2", 300)
+            .attr("x1", 10)
+            .attr("x2", 310)
             .attr("id", "gradient")
             .attr("gradientUnits", "userSpaceOnUse");
+
         gradient
             .append("stop")
             .attr("offset", "0")
@@ -46,55 +90,195 @@ var mobility_gui = (function () {
 
         scaleGrp
             .append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
+            .attr("x", 10)
+            .attr("y", 15)
             .attr("width", 300)
-            .attr("height", 15)
+            .attr("height", 8)
             .attr("fill", "url(#gradient)");
 
-        var ticks = scaleGrp.selectAll("line").data([0, 12, 24]).enter();
-        ticks.append("line")
-            .attr("x1", function (d, i) { return i * 150 })
-            .attr("y1", 0)
-            .attr("x2", function (d, i) { return i * 150 })
-            .attr("y2", 25).style("stroke", "grey");
+        var ticks = scaleGrp.selectAll("line").data([0, 24]).enter();
         ticks.append("text").text(function (d) { return d })
-            .attr("x", function (d, i) { return (i * 150) - 7 })
-            .attr("y", 38)
-            .style("fill", "grey");
+            .attr("x", function (d, i) { return that.colorScale(d) + 5 })
+            .attr("y", 35)
+            .attr("class", "scaleText");
     };
 
+    mobility_gui.prototype.drawScaleTick = function (value) {
+    	/// <summary>
+    	/// Draw the tick on the color scale
+    	/// </summary>
+    	/// <param name="value">The value on the scale</param>
+        var that = this;
+        this.parent.select(".scale").append("polyline")
+            .attr("points", "0,5 5,15 10,5")
+            .attr("class", "colorScaleTick")
+            .attr("transform", "translate(5,0)")
+            .style("fill", "#eeeeee")
+            .transition().attr("transform", "translate(" + (5 + this.colorScale(value)) + ",0)")
+
+        this.parent.select(".scale").append("text")
+        .attr("x", 70)
+        .attr("y", 35)
+        .attr("class", "colorScaleTick scaleText")
+        .text(Math.round(value * 100) / 100 + " hours on average per visit");
+
+    };
+    
+    mobility_gui.prototype.removeScaleTick = function () {
+    	/// <summary>
+    	/// Remove the color scale tick
+    	/// </summary>
+        this.parent.selectAll(".colorScaleTick").remove();
+    };
+
+
+    mobility_gui.prototype.drawMenus = function () {
+        var that = this;
+        var filterMenu = this.parent.append("g");
+
+        filterMenu.append("rect")
+           .attr("x", 0)
+           .attr("y", 0)
+           .attr("width", 220)
+           .attr("height", 150)
+           .attr("class", "tile");
+
+        filterMenu.attr("transform", "translate(-200, 10)");
+
+        var weekButtons = filterMenu.selectAll(".weekButton").data(this.weekData).enter()
+            .append("g")
+            .attr("class", "weekButton")
+            .on("click", function (d, i) {
+                that.weekData[i].clicked = !that.weekData[i].clicked;
+                if (that.weekData[i].clicked)
+                    d3.select(this).select("rect").style("fill", "rgb(232, 12, 122)");
+                else
+                    d3.select(this).select("rect").style("fill", null);
+            });
+
+        weekButtons.append("rect")
+            .attr("x", 10)
+            .attr("y", function (d, i) { return i * 20 + 6; })
+            .attr("width", 85)
+            .attr("height", 18)
+            .attr("class", "tile")
+
+        weekButtons.append("text")
+            .attr("x", 20)
+            .attr("y", function (d, i) { return (i + 1) * 20 - 2; })
+            .style("cursor", "default")
+            .text(function (d) { return d.label });
+
+        var PoDButtons = filterMenu.selectAll(".podButton").data(this.partOfDayData).enter()
+           .append("g")
+            .attr("class", "podButton")
+           .on("click", function (d, i) {
+               that.partOfDayData[i].clicked = !that.partOfDayData[i].clicked;
+               if (that.partOfDayData[i].clicked)
+                   d3.select(this).select("rect").style("fill", "rgb(232, 12, 122)");
+               else
+                   d3.select(this).select("rect").style("fill", null);
+           });
+
+        PoDButtons.append("rect")
+            .attr("x", 105)
+            .attr("y", function (d, i) { return i * 20 + 6; })
+            .attr("width", 85)
+            .attr("height", 18)
+            .attr("class", "tile")
+
+        PoDButtons.append("text")
+            .attr("x", 115)
+            .attr("y", function (d, i) { return (i + 1) * 20 - 2; })
+            .style("cursor", "default")
+            .text(function (d) { return d.label });
+
+        var resetButtonGrp = filterMenu.append("g")
+            .on("click", function () {
+                that.weekData.forEach(function (d) { d.clicked = false });
+                that.partOfDayData.forEach(function (d) { d.clicked = false });
+
+                d3.selectAll(".weekButton").selectAll("rect").style("fill", null);
+                d3.selectAll(".podButton").selectAll("rect").style("fill", null);
+            });
+
+        resetButtonGrp.append("rect")
+           .attr("x", 105)
+           .attr("y", 120 + 6)
+           .attr("width", 85)
+           .attr("height", 18)
+           .attr("class", "tile")
+
+        resetButtonGrp.append("text")
+            .attr("x", 115)
+            .attr("y", 140 - 2)
+            .style("cursor", "default")
+            .text("Reset");
+
+        var openGrp = filterMenu.append("g")
+        .on("click", function () {
+            if (!that.menuExpanded) {
+                that.menuExpanded = true;
+                openGrp.select("polyline")
+                .attr("transform", "translate(210,130) rotate(180)");
+                filterMenu.transition()
+                    .duration(500)
+                    .ease("linear")
+                    .attr("transform", "translate(10,10)");
+            }
+            else {
+                that.menuExpanded = false;
+                openGrp.select("polyline")
+                .attr("transform", "translate(210,130) rotate(0)");
+                filterMenu.transition()
+                    .duration(500)
+                    .ease("elastic")
+                    .attr("transform", "translate(-200, 10)");
+            }
+        });
+
+        openGrp.append("rect")
+            .attr("x", 200)
+            .attr("y", 0)
+            .attr("width", 20)
+            .attr("height", 150)
+            .style("opacity", 0);            
+
+        openGrp.append("text")
+            .attr("y", 20)
+            .selectAll("tspan").data("Filters".split("")).enter()
+            .append("tspan")
+            .attr("dy", 13)
+            .attr("x", 205)
+            .text(function(t) { return t;});
+        
+        openGrp.append("polyline")
+           .attr("points", "-5,-5 5,0 -5,5")
+           .attr("transform", "translate(210,130) rotate(0)")
+           .style("fill", "#eeeeee");
+    };
+
+  
 
     mobility_gui.prototype.update = function () {
 
         this.parent.selectAll(".scale")
             .attr("transform", "translate(20," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
         this.parent.selectAll(".copyrightBox")
-            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 300) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
 
     };
 
-    mobility_gui.prototype.drawScaleTick = function (value) {
-
-        this.parent.select(".scale").append("rect").attr("x", 0)
-            .attr("y", -20)
-            .attr("width", 3)
-            .attr("height", 35).attr("id","colorScaleTick")
-            .style("fill", "grey").transition().attr("x", this.colorScale(value));
-    };
-    mobility_gui.prototype.removeScaleTick = function () {
-        this.parent.selectAll("#colorScaleTick").remove();
-
-    };
+    
 
     mobility_gui.prototype.showDetailFrame = function (data) {
         var grp = this.parent.append("g")
             .attr("class", "detailFrame")
-            .attr("transform", "translate(-500, 100)");
+            .attr("transform", "translate(-500, 170)");
 
-      
+
         grp.transition()
-        .attr("transform", "translate(10, 100)");
+        .attr("transform", "translate(10, 170)");
 
         this.currentTooltip = new mobility_tooltip(grp, data);
     };
@@ -103,38 +287,38 @@ var mobility_gui = (function () {
         var that = this;
         this.parent.selectAll(".detailFrame")
             .transition()
-            .attr("transform", "translate(-500, 100)").remove();
+            .attr("transform", "translate(-500, 170)").remove();
 
-        
+
         this.currentTooltip = null;
-        
+
     };
 
     mobility_gui.prototype.drawCopyright = function () {
-
+        /// <summary>
+        /// Draw the copyright box
+        /// </summary>
         var copGrp = this.parent.append("g").attr("class", "copyrightBox");
 
-        copGrp.append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("height", 15)
-            .attr("width", 130)
-            .attr("class", "box");
-
-        copGrp.append("a")
-        .attr("xlink:href", "http://www.openstreetmap.org/copyright")
+        var text = copGrp
         .append("text")
-        .text("© OpenStreetMap contributors")
         .attr("x", 5)
         .attr("y", 10)
+        .attr("class", "copyright")
         .style("font-size", "9px");
 
+        text.append("a")
+        .attr("xlink:href", "http://www.openstreetmap.org/copyright")
+            .append("tspan")
+        .text("© OpenStreetMap ");
+
+        text.append("tspan")
+        .text("contributors");
+
         copGrp.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
-
-
     };
 
-    
+
     return mobility_gui;
 
 })();
