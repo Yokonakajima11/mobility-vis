@@ -61,8 +61,8 @@ var mobility_gui = (function () {
         var that = this;
         var scaleGrp = this.parent.append("g")
             .attr("class", "scale")
-            //.attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 70) + ")");
-            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+            .attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 70) + ")");
+            //.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
 
         scaleGrp.append("rect")
             .attr("x", 0)
@@ -118,7 +118,7 @@ var mobility_gui = (function () {
             .transition().attr("transform", "translate(" + (5 + this.colorScale(value)) + ",0)")
 
         this.parent.select(".scale").append("text")
-        .attr("x", 70)
+        .attr("x", 90)
         .attr("y", 35)
         .attr("class", "colorScaleTick scaleText")
         .text(Math.round(value * 100) / 100 + " hours on average per visit");
@@ -297,8 +297,8 @@ var mobility_gui = (function () {
     mobility_gui.prototype.update = function () {
 
         this.parent.selectAll(".scale")
-            //.attr("transform", "translate(20," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
-        .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+            .attr("transform", "translate(20," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+        //.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
 
         this.parent.selectAll(".copyrightBox")
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");

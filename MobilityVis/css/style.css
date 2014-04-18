@@ -39,6 +39,13 @@ polyline.dateLabel {
     stroke-width: 0.5px;
 }
 
+polyline.tickerLabel {
+    fill: #eeeeee;
+    fill-opacity: .8;
+    stroke: #999999;
+    stroke-width: 0.5px;
+}
+
 text {
     fill: #eeeeee;
     font-family: 'Segoe UI';
@@ -75,6 +82,10 @@ text {
   stroke-width: 0.4px;*/
 }
 
+.timelineButton {
+    fill: #eeeeee;
+}
+ 
 .resize {
   fill: #eeeeee;
 }

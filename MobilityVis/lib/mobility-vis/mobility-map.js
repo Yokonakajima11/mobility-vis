@@ -81,6 +81,7 @@ var mobility_map = (function () {
 
         /*----------------------------------------- Control ------------------------------------------*/
         this.detailView = false;
+        this.tickDuration = 1000;
 
         /*--------------------------------------  Constructor    -------------------------------------*/        
         this.map
@@ -503,7 +504,7 @@ var mobility_map = (function () {
     	/// <param name="parent">Parent container of the GUI layer</param>
         this.timelineLayer = this.guiLayer.append("svg:g")
             .attr("class", "timeline")
-            .attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 510) + ")");
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",10)");
 
         this.gui = new mobility_gui(this.guiLayer, this);
     };
@@ -540,7 +541,7 @@ var mobility_map = (function () {
         var chart = this;
         this.onMapMove();
         this.gui.update();
-        this.timelineLayer.attr("transform", "translate(1000," + (document.getElementById(this.parentId).offsetHeight - 510) + ") rotate(-90)");
+        this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",10)");
     };
 
     /*--------------------------------------------------------------------  Details methods    --------------------------------------------------------------------*/
@@ -705,7 +706,7 @@ var mobility_map = (function () {
         this.startTime += 1000 * 60 * 60 * 24;
         this.endTime += 1000 * 60 * 60 * 24;
         this.updatePoints(true);
-        this.updateConnections(true, 1000);
+        this.updateConnections(true, this.tickDuration);
     };
  
     return mobility_map;
