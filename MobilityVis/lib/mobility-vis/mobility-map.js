@@ -46,7 +46,7 @@ var mobility_map = (function () {
         this.dayOfWeekFilter = [];
         /// <field name="timeOfDayFilter" type="Array">Filter for times of day. Periods in the filter 
         /// (as ranges) will not be displayed</field>
-        this.timeOfDayFilter = [{from:0, to:6, label: "night", filtered:false},
+        this.timeOfDayFilter = [{from:0, to:6, label: "dusk", filtered:false},
                                 {from:6, to:12, label: "morning", filtered:false}, 
                                 {from:12, to:18, label: "afternoon", filtered:false}, 
                                 {from:18, to:22, label: "evening", filtered:false}, 
@@ -364,10 +364,16 @@ var mobility_map = (function () {
 
         marker.selectAll("circle").transition().duration(100).attr("r", function (d) {
             return chart.radiusScale(d.count)
-        }).style("fill", function (d) {
-            return chart.colorScale(d.time)
+        }).style("fill", function (d) {           
+            if (chart.pointInFilter(d))
+                return chart.colorScale(d.time);
+            else
+                return "#bbbbbb";
         }).style("stroke", function (d) {
-            return d3.rgb(chart.colorScale(d.time)).darker();
+            if (chart.pointInFilter(d))
+                return d3.rgb(chart.colorScale(d.time)).darker();
+            else
+                return d3.rgb("#bbbbbb").darker();
         });
 
         function transform(d) {
@@ -495,7 +501,9 @@ var mobility_map = (function () {
     	/// Draw the GUI layer
     	/// </summary>
     	/// <param name="parent">Parent container of the GUI layer</param>
-        this.timelineLayer = this.guiLayer.append("svg:g").attr("class", "timeline").attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",100)");
+        this.timelineLayer = this.guiLayer.append("svg:g")
+            .attr("class", "timeline")
+            .attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 510) + ")");
 
         this.gui = new mobility_gui(this.guiLayer, this);
     };
@@ -532,7 +540,7 @@ var mobility_map = (function () {
         var chart = this;
         this.onMapMove();
         this.gui.update();
-        this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",100)");
+        this.timelineLayer.attr("transform", "translate(1000," + (document.getElementById(this.parentId).offsetHeight - 510) + ") rotate(-90)");
     };
 
     /*--------------------------------------------------------------------  Details methods    --------------------------------------------------------------------*/
@@ -623,6 +631,45 @@ var mobility_map = (function () {
         /// Change displayed time period. Event handler for timeline's brushend event
     	/// </summary>
         this.updateConnections(false, 1500);
+    };
+
+    mobility_map.prototype.pointInFilter = function (d) {
+        /// <summary>
+        /// Check if the data point passes through filters
+        /// </summary>
+        /// <param name="d" type="mobility_point">The data point to filter</param>
+        /// <returns type="Boolean">Whether it passes or not</returns>
+        var that = this;
+        var allDays = [0, 1, 2, 3, 4, 5, 6];
+
+
+        if (this.dayOfWeekFilter.length == 0) {
+            if (this.timeOfDayFilter.every(function (e) { return !e.filtered; }))
+                return true;
+            else {
+                return allDays.some(function (e) {
+                    return that.timeOfDayFilter.some(function (f) {
+                        return f.filtered && (d.sumBuckets(e, f.from, f.to) > 0)
+                    });
+                });
+            }
+
+        }
+        else {
+            if (this.timeOfDayFilter.every(function (e) { return !e.filtered; }))
+                return this.dayOfWeekFilter.some(function (e) {
+                    return d.buckets[e].total > 0;
+                });
+            else {
+                return this.dayOfWeekFilter.some(function (e) {
+                    return that.timeOfDayFilter.some(function (f) {
+                        return f.filtered && (d.sumBuckets(e, f.from, f.to) > 0)
+                    });
+                });
+            }
+        }
+
+
     };
 
     mobility_map.prototype.updateDayOfWeekFilter = function (filter) {

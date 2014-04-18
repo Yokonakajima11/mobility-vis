@@ -8,9 +8,10 @@ var mobility_timeline = (function () {
 
     function mobility_timeline(parentContainer, visRef,start, end, currentStart) {
         /// <param name="visRef" type="mobility_map"></param>
-        /// <field name="visRef" type="mobility_map"></param>
+        
         var chart = this;
         this.parent = parentContainer;
+        /// <field name="visRef" type="mobility_map"></param>
         this.visRef = visRef;
         this.startTime = start;
         this.endTime = end;
@@ -28,7 +29,7 @@ var mobility_timeline = (function () {
         this.pause = false;
        
 
-        //this.drawTimeline();
+        this.drawTimeline();
     };
 
     mobility_timeline.prototype.drawTimeline = function () {
@@ -43,19 +44,17 @@ var mobility_timeline = (function () {
         
       
         this.parent.append("rect")
-       //.attr("rx", 6)
-       //.attr("ry", 6)
-       .attr("x", 0)
-       .attr("y", 0)
-       .attr("width", 24)
-       .attr("height", 500)
-       .attr("class", "timeline tile");
+           .attr("x", 0)
+           .attr("y", 0)
+           .attr("width", 40)
+           .attr("height", 500)
+           .attr("class", "timeline tile");
 
-        this.parent.append("line").attr("x1", 12).attr("y1", 10).attr("x2", 12).attr("y2", 490)
-            .style("stroke", "#000000").style("stroke-width", "1px");
+        this.parent.append("line").attr("x1", 20).attr("y1", 10).attr("x2", 20).attr("y2", 490)
+            .style("stroke", "#eeeeee").style("stroke-width", "1px");
         var gBrush = this.parent.append("g").call(this.brush);
-        gBrush.selectAll("rect").attr("x", 6).attr("width", 12).style("fill", "#E80C7A").style("fill-opacity",0.8);
-        gBrush.selectAll(".resize").append("path").attr("d", resizePath).attr("transform", "translate(30,0) rotate(90)");
+        gBrush.selectAll("rect").attr("x", 15).attr("width", 10).style("fill", "#E80C7A").style("fill-opacity",0.8);
+        gBrush.selectAll(".resize").append("path").attr("d", resizePath).attr("transform", "translate(38,0) rotate(90)");
 
         d3.selectAll(".resize").append("polyline").attr("points", this.bubble).attr("transform","translate(-60,-7)").attr("class","dateLabel");
         d3.selectAll(".resize.n").append("text").attr("class", "dateLabel dateString").attr("id", "startDate").text(mobility_timeline.formatDate(new Date(this.brush.extent()[0]))).attr("transform", "translate(-59,5)");

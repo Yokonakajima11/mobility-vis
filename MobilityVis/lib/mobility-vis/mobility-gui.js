@@ -61,7 +61,8 @@ var mobility_gui = (function () {
         var that = this;
         var scaleGrp = this.parent.append("g")
             .attr("class", "scale")
-            .attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 70) + ")");
+            //.attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 70) + ")");
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
 
         scaleGrp.append("rect")
             .attr("x", 0)
@@ -131,7 +132,6 @@ var mobility_gui = (function () {
         this.parent.selectAll(".colorScaleTick").remove();
     };
 
-
     mobility_gui.prototype.drawMenus = function () {
         var that = this;
         var filterMenu = this.parent.append("g");
@@ -154,6 +154,13 @@ var mobility_gui = (function () {
                     d3.select(this).select("rect").style("fill", "rgb(232, 12, 122)");
                 else
                     d3.select(this).select("rect").style("fill", null);
+                that.visRef.updateDayOfWeekFilter(i);
+            })
+            .on("mouseover", function() {
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function() {
+                    d3.select(this).select("text").style("fill", null);
             });
 
         weekButtons.append("rect")
@@ -170,15 +177,22 @@ var mobility_gui = (function () {
             .text(function (d) { return d.label });
 
         var PoDButtons = filterMenu.selectAll(".podButton").data(this.partOfDayData).enter()
-           .append("g")
+            .append("g")
             .attr("class", "podButton")
-           .on("click", function (d, i) {
-               that.partOfDayData[i].clicked = !that.partOfDayData[i].clicked;
-               if (that.partOfDayData[i].clicked)
-                   d3.select(this).select("rect").style("fill", "rgb(232, 12, 122)");
-               else
-                   d3.select(this).select("rect").style("fill", null);
-           });
+            .on("click", function (d, i) {
+                that.partOfDayData[i].clicked = !that.partOfDayData[i].clicked;
+                if (that.partOfDayData[i].clicked)
+                    d3.select(this).select("rect").style("fill", "rgb(232, 12, 122)");
+                else
+                    d3.select(this).select("rect").style("fill", null);
+                that.visRef.updateTimeofDayFilter(i);
+            })
+            .on("mouseover", function () {
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function () {
+                 d3.select(this).select("text").style("fill", null);
+            });
 
         PoDButtons.append("rect")
             .attr("x", 105)
@@ -195,12 +209,26 @@ var mobility_gui = (function () {
 
         var resetButtonGrp = filterMenu.append("g")
             .on("click", function () {
-                that.weekData.forEach(function (d) { d.clicked = false });
-                that.partOfDayData.forEach(function (d) { d.clicked = false });
+                that.weekData.forEach(function (d, i) {
+                    if (d.clicked)
+                        that.visRef.updateDayOfWeekFilter(i);
+                    d.clicked = false
+                });
+                that.partOfDayData.forEach(function (d, i) {
+                    if (d.clicked)
+                        that.visRef.updateTimeofDayFilter(i);
+                    d.clicked = false
+                });
 
                 d3.selectAll(".weekButton").selectAll("rect").style("fill", null);
                 d3.selectAll(".podButton").selectAll("rect").style("fill", null);
-            });
+            })
+            .on("mouseover", function () {
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function () {
+                d3.select(this).select("text").style("fill", null);
+            });;
 
         resetButtonGrp.append("rect")
            .attr("x", 105)
@@ -235,7 +263,15 @@ var mobility_gui = (function () {
                     .ease("elastic")
                     .attr("transform", "translate(-200, 10)");
             }
-        });
+        })
+        .on("mouseover", function () {
+            d3.select(this).select("polyline").style("fill", "#FFFFFF");
+            d3.select(this).select("text").style("fill", "#FFFFFF");
+        })
+        .on("mouseout", function () {
+            d3.select(this).select("polyline").style("fill", "#eeeeee");
+            d3.select(this).select("text").style("fill", null);
+        });;
 
         openGrp.append("rect")
             .attr("x", 200)
@@ -256,14 +292,14 @@ var mobility_gui = (function () {
            .attr("points", "-5,-5 5,0 -5,5")
            .attr("transform", "translate(210,130) rotate(0)")
            .style("fill", "#eeeeee");
-    };
-
-  
+    };  
 
     mobility_gui.prototype.update = function () {
 
         this.parent.selectAll(".scale")
-            .attr("transform", "translate(20," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+            //.attr("transform", "translate(20," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+        .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+
         this.parent.selectAll(".copyrightBox")
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
 

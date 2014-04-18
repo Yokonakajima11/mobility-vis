@@ -2,19 +2,34 @@
 var mobility_point = (function () {
 
     function mobility_point(id, lat, lon) {
-        this.id = id;
-        this.lat = lat;
-        this.lon = lon;
-        this.count = 0;
-        this.time = 0;
-        this.visits = [];
-        this.buckets = [];
+    	/// <summary>
+    	/// A single data point entity
+    	/// </summary>
+    	/// <param name="id">Id of the point</param>
+    	/// <param name="lat">Latitude of the point</param>
+        /// <param name="lon">longitude of the point</param>
 
-        this.days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        /// <field name="id" type="Number">Id of the point</field>
+        this.id = id;
+        /// <field name="lat" type="Number">Latitude of the location</field>
+        this.lat = lat;
+        /// <field name="lon" type="Number">Longitude of the location</field>
+        this.lon = lon;
+        /// <field name="count" type="Number">Count of visits in the location</field>
+        this.count = 0;
+        /// <field name="time" type="Number">Total time spent at the location</field>
+        this.time = 0;
+        /// <field name="visits" type="Array">List of visits at the location</field>
+        this.visits = [];
+        /// <field name="buckets" type="Array">Bucketed visits data</field>
+        this.buckets = [];
 
     };
 
     mobility_point.prototype.clear = function () {
+    	/// <summary>
+        /// Clear visits data for the location
+    	/// </summary>
         this.count = 0;
         this.time = 0;
         this.visits = [];
@@ -22,15 +37,25 @@ var mobility_point = (function () {
     };
 
     mobility_point.prototype.update = function (count, time, visits) {
+    	/// <summary>
+    	/// Update visits data for the location
+    	/// </summary>
+        /// <param name="count">Count of visits in the location</param>
+        /// <param name="time">Total time spent at the location</param>
+        /// <param name="visits">List of visits at the location</param>
         this.count = count;
         this.time = time;
         this.visits = visits;
     };
     
     mobility_point.prototype.createBuckets = function () {
+    	/// <summary>
+    	/// Create new empty buckets for the visit data
+    	/// </summary>
         var that = this;
+        var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         this.buckets = [];
-        this.days.forEach(function (d) {
+        days.forEach(function (d) {
             var ind = that.buckets.push({ day: d, total: 0, timeBucket: [] });
             for (var i = 0; i < 24; i++)
                 that.buckets[ind - 1].timeBucket.push({ count: 0, total: 0 });
@@ -38,6 +63,9 @@ var mobility_point = (function () {
     };
 
     mobility_point.prototype.bucketData = function () {
+    	/// <summary>
+    	/// Calculate the visits buckets for the location
+    	/// </summary>
         this.createBuckets();
 
         for (var l = 0; l < this.visits.length; l++) {
@@ -46,6 +74,8 @@ var mobility_point = (function () {
             var visit = this.visits[l];
             var currDay = new Date(visit.start);
 
+            //Divide the visits into the day-of-week buckets
+            //If visit spans multiple days it will be split
             do {
                 var periodStart = Math.max(currDay.setHours(0, 0, 0, 0), visit.start);
                 var periodEnd = Math.min(currDay.setHours(23, 59, 59, 999), visit.end);
@@ -57,15 +87,19 @@ var mobility_point = (function () {
 
             var startFound = false;
             for (var day = 0; day < 7; day++) {
+                //For each of the days of the week
                 for (var i = 0; i < filteredPeriods[day].length; i++) {
+                    //For each of the visits per given day
                     currDay = new Date(filteredPeriods[day][i].from);
                     var j = 0;
+                    //Bucket data into hourly buckets, per given day
                     do {
+                        //If visit spans multiple hours it will be split
                         var periodStart = Math.max(currDay.setHours(j, 0, 0, 0), visit.start);
                         var periodEnd = Math.min(currDay.setHours(j, 59, 59, 999), visit.end);
 
                         if (!startFound && visit.start > currDay.setHours(j, 0, 0, 0) && visit.start < currDay.setHours(j + 1, 0, 0, 0))
-                            startFound = true;
+                            startFound = true; //We found the bucket in which the visit begins
                         else if (!startFound) {
                             j++;
                             continue;
@@ -84,6 +118,22 @@ var mobility_point = (function () {
 
     };
 
+    mobility_point.prototype.sumBuckets = function (day, start, end) {
+    	/// <summary>
+        /// Sum total time spent in the location on the given day of week between specified
+        /// hours.
+    	/// </summary>
+    	/// <param name="day">The day of the week to look for</param>
+    	/// <param name="start">Starting hour</param>
+    	/// <param name="end">Ending hour</param>
+    	/// <returns type="Number">The total time spent at the location within the constraints</returns>
+        var sum = 0;
+
+        for (var i = start; i < end; i++)
+            sum += this.buckets[day].timeBucket[i].total;
+
+        return sum / (end - start - 1);
+    };
     
     return mobility_point;
 

@@ -76,10 +76,7 @@ text {
 }
 
 .resize {
-  fill: #999999;
-  fill-opacity: .8;
-  /*stroke: #999999;*/
-  /*stroke-width: 1.5px;*/
+  fill: #eeeeee;
 }
 
 .connection {
