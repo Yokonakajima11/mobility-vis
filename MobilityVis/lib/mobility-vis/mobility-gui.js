@@ -24,7 +24,7 @@ var mobility_gui = (function () {
         this.currentTooltip = null;
 
         /*---------------------------------------  Control    -----------------------------------------*/
-        this.menuExpanded = false;
+        this.menuExpanded = { filters: false, modes: false };
 
         /*----------------------------------------  Data    ------------------------------------------*/
         /// <field name="weekData" type="Array">Data for days of week filter menu</field>
@@ -61,7 +61,7 @@ var mobility_gui = (function () {
         var that = this;
         var scaleGrp = this.parent.append("g")
             .attr("class", "scale")
-            .attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 70) + ")");
+            .attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
             //.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
 
         scaleGrp.append("rect")
@@ -134,7 +134,8 @@ var mobility_gui = (function () {
 
     mobility_gui.prototype.drawMenus = function () {
         var that = this;
-        var filterMenu = this.parent.append("g");
+        var filterMenu = this.parent.append("g")
+            .attr("id", "filterMenu");
 
         filterMenu.append("rect")
            .attr("x", 0)
@@ -143,7 +144,7 @@ var mobility_gui = (function () {
            .attr("height", 150)
            .attr("class", "tile");
 
-        filterMenu.attr("transform", "translate(-200, 10)");
+        
 
         var weekButtons = filterMenu.selectAll(".weekButton").data(this.weekData).enter()
             .append("g")
@@ -245,8 +246,8 @@ var mobility_gui = (function () {
 
         var openGrp = filterMenu.append("g")
         .on("click", function () {
-            if (!that.menuExpanded) {
-                that.menuExpanded = true;
+            if (!that.menuExpanded.filters) {
+                that.menuExpanded.filters = true;
                 openGrp.select("polyline")
                 .attr("transform", "translate(210,130) rotate(180)");
                 filterMenu.transition()
@@ -255,7 +256,7 @@ var mobility_gui = (function () {
                     .attr("transform", "translate(10,10)");
             }
             else {
-                that.menuExpanded = false;
+                that.menuExpanded.filters = false;
                 openGrp.select("polyline")
                 .attr("transform", "translate(210,130) rotate(0)");
                 filterMenu.transition()
@@ -285,13 +286,80 @@ var mobility_gui = (function () {
             .selectAll("tspan").data("Filters".split("")).enter()
             .append("tspan")
             .attr("dy", 13)
-            .attr("x", 205)
-            .text(function(t) { return t;});
+            .attr("x", 207)
+            .text(function (t) { return t; })
+            .style("text-anchor", "middle");
         
         openGrp.append("polyline")
            .attr("points", "-5,-5 5,0 -5,5")
            .attr("transform", "translate(210,130) rotate(0)")
            .style("fill", "#eeeeee");
+
+        filterMenu.attr("transform", "translate(-200, 10)");
+
+        var modesMenu = this.parent.append("g")
+            .attr("id", "modesMenu");
+
+        modesMenu.append("rect")
+           .attr("x", 0)
+           .attr("y", 0)
+           .attr("width", 220)
+           .attr("height", 120)
+           .attr("class", "tile");
+
+        var modesOpenGrp = modesMenu.append("g")
+           .on("click", function () {
+               if (!that.menuExpanded.modes) {
+                   that.menuExpanded.modes = true;
+                   modesOpenGrp.select("polyline")
+                   .attr("transform", "translate(210,100) rotate(180)");
+                   modesMenu.transition()
+                       .duration(500)
+                       .ease("linear")
+                       .attr("transform", "translate(10,170)");
+               }
+               else {
+                   that.menuExpanded.modes = false;
+                   modesOpenGrp.select("polyline")
+                   .attr("transform", "translate(210,100) rotate(0)");
+                   modesMenu.transition()
+                       .duration(500)
+                       .ease("elastic")
+                       .attr("transform", "translate(-200, 170)");
+               }
+           })
+       .on("mouseover", function () {
+           d3.select(this).select("polyline").style("fill", "#FFFFFF");
+           d3.select(this).select("text").style("fill", "#FFFFFF");
+       })
+       .on("mouseout", function () {
+           d3.select(this).select("polyline").style("fill", "#eeeeee");
+           d3.select(this).select("text").style("fill", null);
+       });;
+
+        modesOpenGrp.append("rect")
+            .attr("x", 200)
+            .attr("y", 0)
+            .attr("width", 20)
+            .attr("height", 120)
+            .style("opacity", 0);
+
+        modesOpenGrp.append("text")
+            .attr("y", 20)
+            .selectAll("tspan").data("Modes".split("")).enter()
+            .append("tspan")
+            .attr("dy", 13)
+            .attr("x", 207)
+            .text(function (t) { return t; })
+            .style("text-anchor", "middle");
+
+        modesOpenGrp.append("polyline")
+           .attr("points", "-5,-5 5,0 -5,5")
+           .attr("transform", "translate(210,100) rotate(0)")
+           .style("fill", "#eeeeee");
+
+        modesMenu.attr("transform", "translate(-200, 170)");
+
     };  
 
     mobility_gui.prototype.update = function () {
@@ -303,30 +371,38 @@ var mobility_gui = (function () {
         this.parent.selectAll(".copyrightBox")
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
 
+        if (this.currentTooltip != null)
+            this.currentTooltip.update();
     };
 
     
 
     mobility_gui.prototype.showDetailFrame = function (data) {
+        var that = this;
         var grp = this.parent.append("g")
             .attr("class", "detailFrame")
-            .attr("transform", "translate(-500, 170)");
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200)  + ", " + document.getElementById(this.parentId).offsetHeight + ")");
 
 
         grp.transition()
-        .attr("transform", "translate(10, 170)");
-
-        this.currentTooltip = new mobility_tooltip(grp, data);
+            .duration(500)
+            .ease("linear")
+        .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200) + ", 10)");
+        var closeFun = function () { that.visRef.hideDetails() };
+        this.currentTooltip = new mobility_tooltip(grp, data, document.getElementById(this.parentId).offsetWidth / 2 - 110 + 200, document.getElementById(this.parentId).offsetHeight - 20, closeFun);
     };
 
     mobility_gui.prototype.hideDetailFrame = function () {
         var that = this;
-        this.parent.selectAll(".detailFrame")
+        this.parent.select(".detailFrame")
             .transition()
-            .attr("transform", "translate(-500, 170)").remove();
+            .duration(500)
+            .ease("elastic")
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200) + ", " + document.getElementById(this.parentId).offsetHeight + "0)")
+            .remove();
 
-
-        this.currentTooltip = null;
+        delete this.currentTooltip;
+        //this.currentTooltip = null;
 
     };
 

@@ -81,6 +81,7 @@ var mobility_map = (function () {
 
         /*----------------------------------------- Control ------------------------------------------*/
         this.detailView = false;
+        this.detailItem = null;
         this.tickDuration = 1000;
 
         /*--------------------------------------  Constructor    -------------------------------------*/        
@@ -190,6 +191,8 @@ var mobility_map = (function () {
             }
             else if (countDict[this.data.location[i].id] != undefined && animatedTick) {
                 this.data.location[i].count += (countDict[this.data.location[i].id].count);
+                this.data.location[i].time += (countDict[this.data.location[i].id].time);
+                this.data.location[i].makeAverage();
                 this.displayedPoints.push(this.data.location[i]);
             }
 
@@ -199,12 +202,14 @@ var mobility_map = (function () {
             var slice = 0
             for (var i = 0; i < this.data.location.length; i++) {
                 if (this.data.location[i].count == 0) break;
-                this.data.location[i].time /= (this.data.location[i].count * 1000 * 60 * 60);
+                this.data.location[i].makeAverage();
                 this.data.location[i].bucketData();
                 slice = i + 1;
             }
             this.displayedPoints = this.data.location.slice(0, slice);
         }
+
+        
 
         this.drawPoints(animatedTick);
     };
@@ -345,7 +350,7 @@ var mobility_map = (function () {
              .data(this.displayedPoints, function (d) { return d.id });
         if (!animatedTick)
             // Remove the points that are no longer displayed
-            marker.exit().transition().attr("r", 0).remove();
+            marker.exit().attr("r", 0).remove();
         else {
             layer.selectAll(".location").transition().style("fill", "#aaaaaa").style("stroke", "#888888");
         }
@@ -355,7 +360,8 @@ var mobility_map = (function () {
         // Add a circle.
         newMarkers.append("svg:circle")
             .attr("class", "location")
-            .attr("r", 0).style("fill-opacity", 0.9)
+            .attr("r", 0)
+            .style("fill-opacity", 0.9)
             .style("fill", this.colorScale(0))
             .style("stroke", "#E80C7A")
             .style("stroke-width", 2)
@@ -363,19 +369,22 @@ var mobility_map = (function () {
             .on("mouseout", function () { if (!chart.detailView) return chart.hideHoverDetails(); })
             .on("click", function (d) { return chart.showDetails(d); });
 
-        marker.selectAll("circle").transition().duration(100).attr("r", function (d) {
-            return chart.radiusScale(d.count)
-        }).style("fill", function (d) {           
-            if (chart.pointInFilter(d))
-                return chart.colorScale(d.time);
-            else
-                return "#bbbbbb";
-        }).style("stroke", function (d) {
-            if (chart.pointInFilter(d))
-                return d3.rgb(chart.colorScale(d.time)).darker();
-            else
-                return d3.rgb("#bbbbbb").darker();
-        });
+        marker.selectAll("circle").transition().duration(100)
+            .attr("r", function (d) {
+                return chart.radiusScale(d.count)
+                })
+            .style("fill", function (d) {
+                if (chart.pointInFilter(d))
+                    return chart.colorScale(d.avgTime);
+                else
+                    return "#bbbbbb";
+                })
+            .style("stroke", function (d) {
+                if (chart.pointInFilter(d))
+                    return d3.rgb(chart.colorScale(d.avgTime)).darker();
+                else
+                    return d3.rgb("#bbbbbb").darker();
+            });
 
         function transform(d) {
             d = chart.map.locationPoint({ lon: d.lon, lat: d.lat });
@@ -504,7 +513,7 @@ var mobility_map = (function () {
     	/// <param name="parent">Parent container of the GUI layer</param>
         this.timelineLayer = this.guiLayer.append("svg:g")
             .attr("class", "timeline")
-            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",10)");
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 40) + ",10)");
 
         this.gui = new mobility_gui(this.guiLayer, this);
     };
@@ -541,7 +550,7 @@ var mobility_map = (function () {
         var chart = this;
         this.onMapMove();
         this.gui.update();
-        this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 50) + ",10)");
+        this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 40) + ",10)");
     };
 
     /*--------------------------------------------------------------------  Details methods    --------------------------------------------------------------------*/
@@ -562,7 +571,7 @@ var mobility_map = (function () {
 
 
 
-        this.gui.drawScaleTick(d.time);
+        this.gui.drawScaleTick(d.avgTime);
 
     };
 
@@ -591,16 +600,46 @@ var mobility_map = (function () {
         this.hideDetails();
         this.hoverDetails(d);
         this.detailView = true;
+        this.detailItem = d;
 
         var currPos = this.map.center();
         var curMultiplier = 0.1;
 
         d3.timer(function () {
             chart.map.center({ lat: currPos.lat + ((d.lat - currPos.lat) * curMultiplier), lon: currPos.lon + ((d.lon - currPos.lon) * curMultiplier) });
+            chart.map.panBy({ x: -(document.getElementById(chart.parentId).offsetWidth / 4) * curMultiplier, y: 0 });
             curMultiplier += 0.1;
-            if (curMultiplier >= 1)
+            if (curMultiplier >= 1) {
+                
                 return true;
+            }
         });
+
+        var findConnection = function (a, b) {
+            for (var i = 0; i < chart.data.connections.length; i++) {
+                if ((chart.data.connections[i].from == a &&
+                        chart.data.connections[i].to == b) ||
+                    (chart.data.connections[i].from == b &&
+                        chart.data.connections[i].to == a))
+                    return true;
+            }
+
+            return false;
+        }
+
+        d3.selectAll(".location").transition().duration(100)
+          .style("fill", function (e) {
+              if (findConnection(d.id, e.id) || d == e)
+                  return chart.colorScale(e.avgTime);
+              else
+                  return "#bbbbbb";
+          }).style("stroke", function (e) {
+              if (findConnection(d.id, e.id) || d == e)
+                  return d3.rgb(chart.colorScale(e.avgTime)).darker();
+              else
+                  return d3.rgb("#bbbbbb").darker();
+          });
+
 
         this.gui.showDetailFrame(d);
 
@@ -610,9 +649,26 @@ var mobility_map = (function () {
         /// <summary>
         /// Hide the details frame
         /// </summary>
+        var chart = this;
+
         this.detailView = false;
         this.hideHoverDetails();
         this.gui.hideDetailFrame();
+
+        d3.selectAll(".location").transition().duration(100)
+            .style("fill", function (d) {
+                if (chart.pointInFilter(d))
+                    return chart.colorScale(d.avgTime);
+                else
+                    return "#bbbbbb";
+            }).style("stroke", function (d) {
+                if (chart.pointInFilter(d))
+                    return d3.rgb(chart.colorScale(d.avgTime)).darker();
+                else
+                    return d3.rgb("#bbbbbb").darker();
+            });
+
+
     };
 
     /*--------------------------------------------------------------------  Utility methods    --------------------------------------------------------------------*/
@@ -624,7 +680,7 @@ var mobility_map = (function () {
     	/// <param name="end">End of time period</param>
         this.startTime = start;
         this.endTime = end;
-        this.updatePoints(false);
+        this.updatePoints(false);        
     };
 
     mobility_map.prototype.updateTimeEnd = function () {
@@ -632,6 +688,12 @@ var mobility_map = (function () {
         /// Change displayed time period. Event handler for timeline's brushend event
     	/// </summary>
         this.updateConnections(false, 1500);
+        if (this.detailView) {
+            this.gui.update();
+            this.hideHoverDetails();
+            this.hoverDetails(this.detailItem);
+        }
+        
     };
 
     mobility_map.prototype.pointInFilter = function (d) {

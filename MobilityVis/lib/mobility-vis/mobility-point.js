@@ -19,6 +19,8 @@ var mobility_point = (function () {
         this.count = 0;
         /// <field name="time" type="Number">Total time spent at the location</field>
         this.time = 0;
+        /// <field name="avgTime" type="Number">Average time spent at the location</field>
+        this.avgTime = 0;
         /// <field name="visits" type="Array">List of visits at the location</field>
         this.visits = [];
         /// <field name="buckets" type="Array">Bucketed visits data</field>
@@ -32,6 +34,7 @@ var mobility_point = (function () {
     	/// </summary>
         this.count = 0;
         this.time = 0;
+        this.avgTime = 0;
         this.visits = [];
         this.buckets = [];
     };
@@ -46,6 +49,14 @@ var mobility_point = (function () {
         this.count = count;
         this.time = time;
         this.visits = visits;
+    };
+
+    mobility_point.prototype.makeAverage = function () {
+        /// <summary>
+        /// Calculate average time for the point
+        /// </summary>
+        if (this.count != 0)
+            this.avgTime = this.time / (this.count * 1000 * 60 * 60);
     };
     
     mobility_point.prototype.createBuckets = function () {
@@ -133,6 +144,23 @@ var mobility_point = (function () {
             sum += this.buckets[day].timeBucket[i].total;
 
         return sum / (end - start - 1);
+    };
+
+    mobility_point.prototype.sumBucketsNoCorrection = function (day, start, end) {
+        /// <summary>
+        /// Sum total time spent in the location on the given day of week between specified
+        /// hours. No correcting for the length of the bucket.
+        /// </summary>
+        /// <param name="day">The day of the week to look for</param>
+        /// <param name="start">Starting hour</param>
+        /// <param name="end">Ending hour</param>
+        /// <returns type="Number">The total time spent at the location within the constraints</returns>
+        var sum = 0;
+
+        for (var i = start; i < end; i++)
+            sum += this.buckets[day].timeBucket[i].total;
+
+        return sum;
     };
     
     return mobility_point;
