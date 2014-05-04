@@ -110,7 +110,8 @@ var mobility_map = (function () {
 
             // Begin
             chart.updatePoints(false);
-            chart.updateConnections(false, 1500);
+           // chart.updateConnections(false, 1500);
+            chart.updateTimeEnd();
         });
 
 
@@ -203,7 +204,7 @@ var mobility_map = (function () {
             for (var i = 0; i < this.data.location.length; i++) {
                 if (this.data.location[i].count == 0) break;
                 this.data.location[i].makeAverage();
-                this.data.location[i].bucketData();
+              
                 slice = i + 1;
             }
             this.displayedPoints = this.data.location.slice(0, slice);
@@ -688,8 +689,14 @@ var mobility_map = (function () {
         /// Change displayed time period. Event handler for timeline's brushend event
     	/// </summary>
         this.updateConnections(false, 1500);
+        for (var i = 0; i < this.data.location.length; i++) {
+            if (this.data.location[i].count == 0) break;
+            this.data.location[i].bucketData();
+        }
+
+
         if (this.detailView) {
-            this.gui.update();
+            this.gui.update(this.startTime, this.endTime);
             this.hideHoverDetails();
             this.hoverDetails(this.detailItem);
         }

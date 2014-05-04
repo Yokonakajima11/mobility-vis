@@ -6,7 +6,7 @@
 
 var mobility_tooltip = (function () {
 
-    function mobility_tooltip(parentContainer, data, width, height, closeFun) {
+    function mobility_tooltip(parentContainer, data, width, height, start, end, closeFun) {
 
         this.parent = parentContainer;
         this.radialChart = "#dayHourRadial";
@@ -20,17 +20,32 @@ var mobility_tooltip = (function () {
         this.startRadius = 25;
         this.midRadius = 15;
 
+        this.startTime = start;
+        this.endTime = end;
+
         this.radialColorScale = d3.scale.linear().range(["#ffffff", "#e80c7a"]).clamp(true);
 
         this.timesOfDay = [{ from: 0, to: 6, label: "Dusk"},
                                { from: 6, to: 12, label: "Morning"},
                                { from: 12, to: 18, label: "Afternoon"},
                                { from: 18, to: 22, label: "Evening"},
-                               { from: 22, to: 24, label: "Night"}];
+                               { from: 22, to: 24, label: "Night" }];
+
+        this.barChart = {
+            x: null,
+            y: null,
+            xAxis: null,
+            yAxis: null,
+            width: 600,
+            height: 300,
+            grp: null
+        };
+
 
         this.update();
         this.draw();
         this.drawInfo();
+        this.drawBarChart();
         this.drawRadialCharts();
 
     };
@@ -98,6 +113,221 @@ var mobility_tooltip = (function () {
             .text(function (t) { return t; });
 
         ttGrp.attr("transform", "translate(10,10)");
+    };
+
+    
+    mobility_tooltip.prototype.drawBarChart = function () {
+        var that = this;
+        var data = [];
+
+
+        this.barChart.grp = this.parent.append("g")
+            .attr("class", "barChart");
+        //var  this.barChart = this.barChart.grp.append("g")
+        //    .attr("class", "fullBarChart");
+
+        this.barChart.grp.append("rect")
+           .attr({ x: 0, y: 0, height: 10, width: 10, "class": "tile" });
+
+        var titleText = this.barChart.grp.append("text")
+            .attr({ x: 0, y: 0, id: "barTitle" })
+            .text("Visits over time")
+            .style("font-size", "18px");
+
+        this.barChart.grp.attr("transform", "translate(430," + (this.height - 350) + ")");
+        titleText.attr("transform", "translate(230, -20)");
+
+        this.barChart.x = d3.scale.ordinal().rangeBands([0, this.barChart.width], .5, 10);
+        this.barChart.y = d3.scale.linear().range([this.barChart.height, 0]);
+
+        this.barChart.y.domain([0, 24]);
+
+        this.barChart.xAxis = d3.svg.axis()
+           .scale(this.barChart.x)
+           .orient("bottom")
+
+        this.barChart.yAxis = d3.svg.axis()
+            .scale(this.barChart.y)
+            .orient("left")
+            .ticks(12);
+
+        this.barChart.grp.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + this.barChart.height + ")")
+            .call(this.barChart.xAxis);
+
+        this.barChart.grp.append("g")
+            .attr("class", "y axis")
+            .call(this.barChart.yAxis)
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text("Time spent (h)");
+
+       
+
+
+        this.updateBarChart();
+    };
+
+
+    mobility_tooltip.prototype.updateBarChart = function () {
+        var that = this;
+        var firstDay = new Date(this.startTime);
+        firstDay.setHours(0, 0, 0, 0);
+
+        var allDays = d3.time.day.range(firstDay, this.endTime);
+        var allMonths = [firstDay].concat(d3.time.month.range(this.startTime, this.endTime))
+
+        this.barChart.x.domain(allDays);
+
+        this.barChart.xAxis
+            .tickValues(allMonths)
+            .tickFormat(d3.time.format("%b %y"));
+
+
+
+        this.barChart.grp.select(".x.axis")
+           .call(this.barChart.xAxis);
+
+        var allBars = this.barChart.grp.selectAll(".bar")
+           .data(this.data.dayData, function (d) { return d.date });
+
+        allBars.exit().remove();
+
+        allBars.transition().duration(1000)
+            .attr("x", function (d) {
+                return that.barChart.x(d.date);
+            })
+            .attr("width", this.barChart.x.rangeBand())
+            .attr("y", function (d) { return that.barChart.y(d.length); });
+
+        allBars.enter().append("rect")
+            .style("fill", function (d) {
+                if (d.date.getDay() == 0 || d.date.getDay() == 6)
+                    return "#ffffff";
+                return "#e80c7a";
+            })
+            .attr({
+                x: function (d) { return that.barChart.x(d.date); },
+                width: this.barChart.x.rangeBand(),
+                y: this.barChart.height,
+                height: 0,
+                "class": "bar"
+            })
+            .transition()
+            .duration(1000)
+            .attr("y", function (d) { return that.barChart.y(d.length); })
+            .attr("height", function (d) { return that.barChart.height - that.barChart.y(d.length); }
+            )       
+
+        var bgButtons = this.barChart.grp.selectAll(".monthRec").data(allMonths);
+        bgButtons.exit().remove();
+
+        bgButtons.enter()
+           .append("rect")
+           .attr("class", "monthRec");
+
+        bgButtons.attr({
+               x: function (d) { return that.barChart.x(d); },
+               y: 0,
+               width: function (d, i) {
+                   if (i == allMonths.length - 1)
+                       return that.barChart.width - that.barChart.x(d)
+                   return that.barChart.x(allMonths[i + 1]) - that.barChart.x(d);
+               },
+               height: that.barChart.height
+           })
+           .style("opacity", "0")
+           .style("fill", "#FFFFFF")
+           .on("mouseover", function () {
+               d3.select(this).style("opacity", 0.1);
+           })
+           .on("mouseout", function () {
+               d3.select(this).style("opacity", 0);
+           })
+           .on("click", function (d) {
+               that.zoomBarChart(d);
+           });
+
+        this.barChart.grp.selectAll(".fullRec").remove()
+
+        this.barChart.grp
+            .append("rect")
+           .attr({
+               x: 0,
+               y: 0,
+               height: this.barChart.height,
+               width: this.barChart.width,
+               "class": "fullRec"
+           })
+           .style("opacity", "0")
+           .style("fill", "#FFFFFF")
+           .on("mouseover", function () {
+               d3.select(this).style("opacity", 0.1);
+           })
+           .on("mouseout", function () {
+               d3.select(this).style("opacity", 0);
+           })
+           .on("click", function () {
+               that.updateBarChart();
+           });
+
+        this.barChart.grp.select("#barTitle").text("Visits over time");
+
+        this.barChart.grp.select(".fullRec").style("visibility", "hidden");
+        this.barChart.grp.select(".monthRec").style("visibility", "visible");
+    };
+
+    mobility_tooltip.prototype.zoomBarChart = function (date) {
+        var that = this;
+        var startDate = new Date(+date);
+        var endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0,0,0,0,1);
+
+        var allDays = d3.time.days(startDate, endDate);
+        var weeks = d3.time.weeks(startDate, endDate);
+        var monthData = [];
+        
+        var aDate = new Date(+startDate);
+        var i = 0;
+        
+        while (i < this.data.dayData.length && this.data.dayData[i].date < endDate) {
+            if (this.data.dayData[i].date >= startDate)
+                monthData.push(this.data.dayData[i]);
+            i++;
+        }
+        
+        this.barChart.x.domain(allDays);
+
+        this.barChart.xAxis
+           .tickValues([startDate].concat(weeks))
+           .tickFormat(d3.time.format("%d"));
+
+
+        this.barChart.grp.select(".x.axis")
+           .call(this.barChart.xAxis);
+
+        var newBars = this.barChart.grp.selectAll(".bar")
+            .data(monthData, function (d) { return d.date });
+
+        newBars.transition()
+            .attr("x", function (d) {
+                console.log(d);
+                console.log(that.barChart.x(d.date))
+                return that.barChart.x(d.date);
+            })
+            .attr("width", this.barChart.x.rangeBand());
+        var format = d3.time.format("%B");
+
+        this.barChart.grp.select("#barTitle").text("Visits over time - " + format(startDate));
+
+        this.barChart.grp.select(".fullRec").style("visibility", "visible");
+        this.barChart.grp.select(".monthRec").style("visibility", "hidden");
+
+        newBars.exit().remove();
+
     };
 
     mobility_tooltip.prototype.drawRadialCharts = function () {
@@ -376,7 +606,7 @@ var mobility_tooltip = (function () {
         
     };
 
-    mobility_tooltip.prototype.update = function () {
+    mobility_tooltip.prototype.update = function (start, end) {
         var that = this;
         this.radialColorScale.domain([d3.min(this.data.buckets, function (f) { return d3.min(f.timeBucket, function (tb) { return tb.total }) }),
             d3.max(this.data.buckets, function (f) { return d3.max(f.timeBucket, function (tb) { return tb.total }) })
@@ -399,6 +629,12 @@ var mobility_tooltip = (function () {
                      "Total time spent: " + this.formatTime(this.data.time),
                      "Average time spent: " + Math.round(this.data.avgTime * 100) / 100 + "h"];
 
+        if (this.barChart.grp != null) {
+            this.startTime = start;
+            this.endTime = end;
+            this.updateBarChart();
+        }
+        
 
         d3.select("#tooltipInfo")
             .selectAll("tspan").data(texts)

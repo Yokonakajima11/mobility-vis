@@ -30,7 +30,8 @@ var mobility_timeline = (function () {
 
         this.playing = false;
         this.pause = false;
-       
+
+        this.updatingTime = false;
 
         this.drawTimeline();
     };
@@ -103,6 +104,7 @@ var mobility_timeline = (function () {
     };
 
     mobility_timeline.prototype.updateTimeline = function () {
+        this.updatingTime = true;
         var position = this.brush.extent();
         d3.select("#startDate").text(mobility_timeline.formatDate(position[0]));
         d3.select("#endDate").text(mobility_timeline.formatDate(position[1]));
@@ -113,7 +115,10 @@ var mobility_timeline = (function () {
     };
 
     mobility_timeline.prototype.finishUpdate = function () {
-        this.visRef.updateTimeEnd();
+        if (this.updatingTime) {
+            this.visRef.updateTimeEnd();
+            this.updatingTime = false;
+        }
     };
 
     mobility_timeline.prototype.startPlaying = function () {

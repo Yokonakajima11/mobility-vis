@@ -25,6 +25,10 @@ var mobility_point = (function () {
         this.visits = [];
         /// <field name="buckets" type="Array">Bucketed visits data</field>
         this.buckets = [];
+        
+        this.hourData = [];
+
+        this.dayData = [];
 
     };
 
@@ -37,6 +41,8 @@ var mobility_point = (function () {
         this.avgTime = 0;
         this.visits = [];
         this.buckets = [];
+        this.hourData = [];
+        this.dayData = [];
     };
 
     mobility_point.prototype.update = function (count, time, visits) {
@@ -49,6 +55,8 @@ var mobility_point = (function () {
         this.count = count;
         this.time = time;
         this.visits = visits;
+        this.hourData = [];
+        this.dayData = [];
     };
 
     mobility_point.prototype.makeAverage = function () {
@@ -102,31 +110,59 @@ var mobility_point = (function () {
                 for (var i = 0; i < filteredPeriods[day].length; i++) {
                     //For each of the visits per given day
                     currDay = new Date(filteredPeriods[day][i].from);
-                    var j = 0;
+                    var j = currDay.getHours();
                     //Bucket data into hourly buckets, per given day
                     do {
                         //If visit spans multiple hours it will be split
                         var periodStart = Math.max(currDay.setHours(j, 0, 0, 0), visit.start);
                         var periodEnd = Math.min(currDay.setHours(j, 59, 59, 999), visit.end);
 
-                        if (!startFound && visit.start > currDay.setHours(j, 0, 0, 0) && visit.start < currDay.setHours(j + 1, 0, 0, 0))
-                            startFound = true; //We found the bucket in which the visit begins
-                        else if (!startFound) {
-                            j++;
-                            continue;
-                        }
-
-                        this.buckets[day].timeBucket[j].total += (periodEnd - periodStart) / (1000 * 60 * 60);
-                        this.buckets[day].timeBucket[j].count++;
-                        this.buckets[day].total += (periodEnd - periodStart) / (1000 * 60 * 60);
+                            this.buckets[day].timeBucket[j].total += (periodEnd - periodStart) / (1000 * 60 * 60);
+                            this.buckets[day].timeBucket[j].count++;
+                            this.buckets[day].total += (periodEnd - periodStart) / (1000 * 60 * 60);
+                            this.hourData.push({
+                                timestamp: periodStart,
+                                length: (periodEnd - periodStart) / (1000 * 60 * 60)
+                            });
 
                         j++;
 
                     } while (j < 24 && periodEnd < visit.end)
                 }
+            }            
+        }
+
+        this.hourData.sort(function (a, b) { return a.timestamp - b.timestamp; });
+        var lastIndex = 0;
+        var aDay = new Date(this.hourData[0].timestamp);
+        this.dayData.push({
+            timestamp: aDay.setHours(0, 0, 0, 0),
+            date: aDay,
+            length: this.hourData[0].length
+        });
+
+        for (var i = 01; i < this.hourData.length; i++) {
+            var newDay = new Date(this.hourData[i].timestamp);
+
+            if (aDay.getDate() == newDay.getDate() &&
+                aDay.getMonth() == newDay.getMonth() &&
+                aDay.getYear() == newDay.getYear()) {
+
+                this.dayData[lastIndex].length += this.hourData[i].length;
+            }
+            else {
+                newDay.setHours(0, 0, 0, 0);
+                this.dayData.push({
+                    timestamp: +newDay,
+                    date: newDay,
+                    length: this.hourData[i].length
+                });
+                lastIndex++;
+                aDay = new Date(this.hourData[i].timestamp);
             }
         }
 
+        this.dayData.sort(function (a, b) { return a.timestamp - b.timestamp; });
     };
 
     mobility_point.prototype.sumBuckets = function (day, start, end) {
