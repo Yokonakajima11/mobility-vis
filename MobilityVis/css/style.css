@@ -83,6 +83,10 @@ text {
     cursor: -webkit-zoom-in;
 }
 
+.fullRec {
+    cursor: -webkit-zoom-out;
+}
+
 .dateString {
   fill: rgb(42, 42, 42);
   color: rgb(42, 42, 42);
