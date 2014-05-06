@@ -132,6 +132,23 @@ var mobility_map = (function () {
         var locDict = {};
         var dict = {};
 
+        var distance = function (pointA, pointB) {
+            var R = 6371; // km
+            var fi1 = pointA.lat * Math.PI / 180;
+            var fi2 = pointB.lat * Math.PI / 180;
+            var dfi = fi2 - fi1;
+            var dl = (pointB.lon - pointA.lon) * Math.PI / 180;
+            
+            var a = Math.sin(dfi / 2) * Math.sin(dfi / 2) +
+                    Math.cos(fi1) * Math.cos(fi2) *
+                    Math.sin(dl / 2) * Math.sin(dl / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            var d = R * c;
+
+            return d;
+
+        };
         //grouping pois with the same ID
 
         for (var i = 0; i < data.length; i++) {
@@ -144,8 +161,23 @@ var mobility_map = (function () {
         //counting average of pois location
         for (var id in dict) {
             var point = dict[id];
-            var averagePoint = new mobility_point(id, d3.mean(point, function (d) { return d.lat }), d3.mean(point, function (d) { return d.lon }));
+            var meanLon = 0, meanLat = 0;
+            var maxExtent = 0;
+            for (var a = 0; a < point.length; a++) {
+                for (var b = a; b < point.length; b++) {
+                    var dist = distance(point[a], point[b]);
+                    if (dist > maxExtent)
+                        maxExtent = dist;
 
+                }
+                meanLon += +point[a].lon;
+                meanLat += +point[a].lat;
+
+            }
+
+          
+            var realMean = d3.mean(point, function (d) { return d.lon });
+            var averagePoint = new mobility_point(id, meanLat / point.length, meanLon / point.length, maxExtent / 1000);
             locDict[id] = averagePoint;
             filteredData.push(averagePoint);
         }
@@ -375,16 +407,22 @@ var mobility_map = (function () {
                 return chart.radiusScale(d.count)
                 })
             .style("fill", function (d) {
-                if (chart.pointInFilter(d))
+                if (d.filtered)
                     return chart.colorScale(d.avgTime);
                 else
                     return "#bbbbbb";
                 })
             .style("stroke", function (d) {
-                if (chart.pointInFilter(d))
+                if (d.filtered)
                     return d3.rgb(chart.colorScale(d.avgTime)).darker();
                 else
                     return d3.rgb("#bbbbbb").darker();
+                })
+            .style("opacity", function (d) {
+                if (d.filtered)
+                    return 0.9;
+                else
+                    return 0.7;
             });
 
         function transform(d) {
@@ -403,6 +441,9 @@ var mobility_map = (function () {
         var chart = this;
         var pointA = this.data.locDict[connection.from];
         var pointB = this.data.locDict[connection.to];
+
+        if (!pointA.filtered || !pointB.filtered)
+            return;
         var parent = d3.select(".connectionLayer");
         var realA = chart.map.locationPoint(pointA);
         var realB = chart.map.locationPoint(pointB);        
@@ -692,6 +733,8 @@ var mobility_map = (function () {
         for (var i = 0; i < this.data.location.length; i++) {
             if (this.data.location[i].count == 0) break;
             this.data.location[i].bucketData();
+
+            this.data.location[i].filtered = this.pointInFilter(this.data.location[i]);
         }
 
 
@@ -712,6 +755,7 @@ var mobility_map = (function () {
         var that = this;
         var allDays = [0, 1, 2, 3, 4, 5, 6];
 
+        
 
         if (this.dayOfWeekFilter.length == 0) {
             if (this.timeOfDayFilter.every(function (e) { return !e.filtered; }))
@@ -753,7 +797,7 @@ var mobility_map = (function () {
             this.dayOfWeekFilter.push(filter);
 
         this.updatePoints(false);
-        this.updateConnections(false , 1500);
+        this.updateTimeEnd();
     };
 
     mobility_map.prototype.updateTimeofDayFilter = function (filter) {
@@ -765,7 +809,7 @@ var mobility_map = (function () {
 
 
         this.updatePoints(false);
-        this.updateConnections(false, 1500);
+        this.updateTimeEnd();
     };
 
     mobility_map.prototype.timeTick = function () {

@@ -1,12 +1,12 @@
 ﻿
 var mobility_point = (function () {
 
-    function mobility_point(id, lat, lon) {
-    	/// <summary>
-    	/// A single data point entity
-    	/// </summary>
-    	/// <param name="id">Id of the point</param>
-    	/// <param name="lat">Latitude of the point</param>
+    function mobility_point(id, lat, lon, extent) {
+        /// <summary>
+        /// A single data point entity
+        /// </summary>
+        /// <param name="id">Id of the point</param>
+        /// <param name="lat">Latitude of the point</param>
         /// <param name="lon">longitude of the point</param>
 
         /// <field name="id" type="Number">Id of the point</field>
@@ -30,12 +30,16 @@ var mobility_point = (function () {
 
         this.dayData = [];
 
+        this.extent = extent;
+
+        this.filtered = true;
+
     };
 
     mobility_point.prototype.clear = function () {
-    	/// <summary>
+        /// <summary>
         /// Clear visits data for the location
-    	/// </summary>
+        /// </summary>
         this.count = 0;
         this.time = 0;
         this.avgTime = 0;
@@ -46,9 +50,9 @@ var mobility_point = (function () {
     };
 
     mobility_point.prototype.update = function (count, time, visits) {
-    	/// <summary>
-    	/// Update visits data for the location
-    	/// </summary>
+        /// <summary>
+        /// Update visits data for the location
+        /// </summary>
         /// <param name="count">Count of visits in the location</param>
         /// <param name="time">Total time spent at the location</param>
         /// <param name="visits">List of visits at the location</param>
@@ -68,9 +72,9 @@ var mobility_point = (function () {
     };
     
     mobility_point.prototype.createBuckets = function () {
-    	/// <summary>
-    	/// Create new empty buckets for the visit data
-    	/// </summary>
+        /// <summary>
+        /// Create new empty buckets for the visit data
+        /// </summary>
         var that = this;
         var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         this.buckets = [];
@@ -82,9 +86,9 @@ var mobility_point = (function () {
     };
 
     mobility_point.prototype.bucketData = function () {
-    	/// <summary>
-    	/// Calculate the visits buckets for the location
-    	/// </summary>
+        /// <summary>
+        /// Calculate the visits buckets for the location
+        /// </summary>
         this.createBuckets();
 
         for (var l = 0; l < this.visits.length; l++) {
@@ -117,13 +121,13 @@ var mobility_point = (function () {
                         var periodStart = Math.max(currDay.setHours(j, 0, 0, 0), visit.start);
                         var periodEnd = Math.min(currDay.setHours(j, 59, 59, 999), visit.end);
 
-                            this.buckets[day].timeBucket[j].total += (periodEnd - periodStart) / (1000 * 60 * 60);
-                            this.buckets[day].timeBucket[j].count++;
-                            this.buckets[day].total += (periodEnd - periodStart) / (1000 * 60 * 60);
-                            this.hourData.push({
-                                timestamp: periodStart,
-                                length: (periodEnd - periodStart) / (1000 * 60 * 60)
-                            });
+                        this.buckets[day].timeBucket[j].total += (periodEnd - periodStart) / (1000 * 60 * 60);
+                        this.buckets[day].timeBucket[j].count++;
+                        this.buckets[day].total += (periodEnd - periodStart) / (1000 * 60 * 60);
+                        this.hourData.push({
+                            timestamp: periodStart,
+                            length: (periodEnd - periodStart) / (1000 * 60 * 60)
+                        });
 
                         j++;
 
@@ -166,14 +170,14 @@ var mobility_point = (function () {
     };
 
     mobility_point.prototype.sumBuckets = function (day, start, end) {
-    	/// <summary>
+        /// <summary>
         /// Sum total time spent in the location on the given day of week between specified
         /// hours.
-    	/// </summary>
-    	/// <param name="day">The day of the week to look for</param>
-    	/// <param name="start">Starting hour</param>
-    	/// <param name="end">Ending hour</param>
-    	/// <returns type="Number">The total time spent at the location within the constraints</returns>
+        /// </summary>
+        /// <param name="day">The day of the week to look for</param>
+        /// <param name="start">Starting hour</param>
+        /// <param name="end">Ending hour</param>
+        /// <returns type="Number">The total time spent at the location within the constraints</returns>
         var sum = 0;
 
         for (var i = start; i < end; i++)
@@ -197,6 +201,12 @@ var mobility_point = (function () {
             sum += this.buckets[day].timeBucket[i].total;
 
         return sum;
+    };
+
+    mobility_point.prototype.getLocationData = function () {
+
+
+
     };
     
     return mobility_point;
