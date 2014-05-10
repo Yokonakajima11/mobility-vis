@@ -34,6 +34,9 @@ var mobility_point = (function () {
 
         this.filtered = true;
 
+        this.locationName = "Unknown location";
+        this.venue = null;
+
     };
 
     mobility_point.prototype.clear = function () {
@@ -203,10 +206,50 @@ var mobility_point = (function () {
         return sum;
     };
 
-    mobility_point.prototype.getLocationData = function () {
+    mobility_point.prototype.getLocationData = function (delay) {
+        //
+        var point = this;
 
+        if ($.jStorage.get("locationCache" + point.id) == null) {
+            setTimeout(function () {
+                d3.json("https://api.foursquare.com/v2/venues/search?ll=" + point.lat + "," + point.lon +
+                    "&radius=" + 100 + "&intent=browse&client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&v=20140509",
+                    function (jsonResponse) {
+                        console.log(point.id);
+                        console.log(jsonResponse);
+                        var venues = jsonResponse.response.venues;
+                        for (var i = 0; i < venues.length; i++) {
+                            if (!point.venue || venues[i].stats.checkinsCount > point.venue.stats.checkinsCount)
+                                point.venue = venues[i];
+                        }
 
+                        if (point.venue) {
+                            point.locationName = point.venue.name;
+                            $.jStorage.set("locationCache" + point.id, point.venue);
+                        }
+                        else {
+                            d3.json("http://nominatim.openstreetmap.org/reverse?format=json&" + 
+                                "lat=" + point.lat + "&lon=" + point.lon ,//+ "&addressdetails=1",
+                                function(openData){
 
+                                    console.log(openData);
+                                    if (openData.address.road != null) {
+                                        point.locationName = openData.address.road + " ";
+                                        if (openData.address.house_number != null)
+                                            point.locationName += openData.address.house_number;
+                                        $.jStorage.set("locationCache" + point.id, { name: point.locationName });
+                                    }
+                                })
+                        }
+
+                    })
+
+            }, delay);
+        }
+        else {
+            point.venue = $.jStorage.get("locationCache" + point.id);
+            point.locationName = point.venue.name;
+        }
     };
     
     return mobility_point;

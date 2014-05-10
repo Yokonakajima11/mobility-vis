@@ -50,7 +50,7 @@ var mobility_map = (function () {
                                 {from:6, to:12, label: "morning", filtered:false}, 
                                 {from:12, to:18, label: "afternoon", filtered:false}, 
                                 {from:18, to:22, label: "evening", filtered:false}, 
-                                {from:22, to:24, label: "night", filtered:false}];
+                                { from: 22, to: 24, label: "night", filtered: false }];
         
         /// <field type="Array">List of currently displayed locations </field>
         this.displayedPoints = null;
@@ -82,6 +82,7 @@ var mobility_map = (function () {
         /*----------------------------------------- Control ------------------------------------------*/
         this.detailView = false;
         this.detailItem = null;
+        this.animating = false;
         this.tickDuration = 1000;
 
         /*--------------------------------------  Constructor    -------------------------------------*/        
@@ -177,9 +178,10 @@ var mobility_map = (function () {
 
           
             var realMean = d3.mean(point, function (d) { return d.lon });
-            var averagePoint = new mobility_point(id, meanLat / point.length, meanLon / point.length, maxExtent / 1000);
+            var averagePoint = new mobility_point(id, meanLat / point.length, meanLon / point.length, maxExtent * 1000);
             locDict[id] = averagePoint;
             filteredData.push(averagePoint);
+            averagePoint.getLocationData(0);
         }
 
         return { location: filteredData, time: timeData, locDict: locDict };
@@ -394,13 +396,14 @@ var mobility_map = (function () {
         newMarkers.append("svg:circle")
             .attr("class", "location")
             .attr("r", 0)
+            .attr("id", function(d) { return "location-" + d.id})
             .style("fill-opacity", 0.9)
             .style("fill", this.colorScale(0))
             .style("stroke", "#E80C7A")
             .style("stroke-width", 2)
             .on("mouseover", function (d) { if(!chart.detailView) chart.hoverDetails(d); })
             .on("mouseout", function () { if (!chart.detailView) return chart.hideHoverDetails(); })
-            .on("click", function (d) { return chart.showDetails(d); });
+            .on("click", function (d) { if (!chart.animating) return chart.showDetails(d); });
 
         marker.selectAll("circle").transition().duration(100)
             .attr("r", function (d) {
@@ -483,7 +486,12 @@ var mobility_map = (function () {
                     return "1";
                 else return "0";
             })
-            .style("stroke-width", chart.connScale(connCount) * (1 / chart.scale) + "px");
+            .style("stroke-width", function () {
+                if (!chart.animating)
+                    return chart.connScale(connCount) * (1 / chart.scale) + "px";
+                else
+                    return (3 / chart.scale) + "px";
+            });
      
         var last = 0;
         // Timer for drawing of the curve
@@ -576,8 +584,10 @@ var mobility_map = (function () {
             return transform(chart.data.locDict[id])+ " scale(" + chart.scale + ")";
         });
         d3.select(".vislayer").selectAll(".connection").style("stroke-width", function (e) {
-            return chart.connScale(e.score) * (1/chart.scale) + "px";
-
+            if (!chart.animating)
+                return chart.connScale(e.score) * (1 / chart.scale) + "px";
+            else
+                return (3 / chart.scale) + "px";
         });
         function transform(d) {
             d = chart.map.locationPoint({ lon: d.lon, lat: d.lat });
@@ -673,13 +683,15 @@ var mobility_map = (function () {
           .style("fill", function (e) {
               if (findConnection(d.id, e.id) || d == e)
                   return chart.colorScale(e.avgTime);
-              else
+              else 
                   return "#bbbbbb";
           }).style("stroke", function (e) {
-              if (findConnection(d.id, e.id) || d == e)
+              if (findConnection(d.id, e.id))
                   return d3.rgb(chart.colorScale(e.avgTime)).darker();
-              else
+              else if (d != e)
                   return d3.rgb("#bbbbbb").darker();
+              else
+                  return "#023E73";
           });
 
 
@@ -729,13 +741,15 @@ var mobility_map = (function () {
     	/// <summary>
         /// Change displayed time period. Event handler for timeline's brushend event
     	/// </summary>
-        this.updateConnections(false, 1500);
+        
         for (var i = 0; i < this.data.location.length; i++) {
             if (this.data.location[i].count == 0) break;
             this.data.location[i].bucketData();
 
             this.data.location[i].filtered = this.pointInFilter(this.data.location[i]);
         }
+        this.drawPoints(false);
+        this.updateConnections(false, 1500);
 
 
         if (this.detailView) {
@@ -821,7 +835,30 @@ var mobility_map = (function () {
         this.updatePoints(true);
         this.updateConnections(true, this.tickDuration);
     };
- 
+
+    mobility_map.prototype.startAnimating = function () {
+        this.animating = true;
+        this.hideDetails();
+
+        for (var i = 0; i < this.data.location.length; i++) {
+            if (this.data.location[i].count == 0) break;
+
+            this.data.location[i].filtered = true;
+        }
+
+
+        this.gui.blockGui();
+
+    };
+
+    mobility_map.prototype.stopAnimating = function () {
+        this.animating = false;
+
+        
+
+        this.gui.unblockGui();
+    };
+
     return mobility_map;
 
 })();

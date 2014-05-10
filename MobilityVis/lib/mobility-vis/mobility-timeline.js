@@ -125,7 +125,7 @@ var mobility_timeline = (function () {
         var that = this;
         this.tickDuration = this.visRef.tickDuration = 1000;
         var startDate = new Date(that.currentStartTime).setHours(0, 0, 0, 0);
-
+        that.visRef.startAnimating();
         that.visRef.updateTime(startDate, startDate + (1000 * 60 * 60 * 24));
         this.currentTime = startDate;
         this.playing = true;
@@ -242,7 +242,10 @@ var mobility_timeline = (function () {
         this.playing = false;
         this.pause = false;
         d3.select("#ticker").remove();
+        this.visRef.stopAnimating();
         this.visRef.updateTime(this.currentStartTime, this.currentEndTime);
+        this.visRef.updateTimeEnd();
+        
         d3.select("#playButton").attr("d", this.playShape);//attr("points", this.play);
         this.parent.select("#timelineBg")
             .transition()

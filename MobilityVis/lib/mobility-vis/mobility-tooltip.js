@@ -36,7 +36,7 @@ var mobility_tooltip = (function () {
             y: null,
             xAxis: null,
             yAxis: null,
-            width: 600,
+            width: 550,
             height: 300,
             grp: null
         };
@@ -105,12 +105,21 @@ var mobility_tooltip = (function () {
 
 
         ttGrp.append("text")
-            .attr("y", 0)
+            .attr("y", 36+28)
             .selectAll("tspan").data(texts).enter()
             .append("tspan")
             .attr("dy", 14)
-            .attr("x", 0)
+            .attr("x", 7)
             .text(function (t) { return t; });
+
+
+        ttGrp.append("text")
+            .attr({
+                x: 5,
+                y: 36+14
+            })
+            .text(this.data.locationName)
+            .style("font-size", "36");
 
         ttGrp.attr("transform", "translate(10,10)");
     };
@@ -166,14 +175,44 @@ var mobility_tooltip = (function () {
             .style("text-anchor", "end")
             .text("Time spent (h)");
 
-       
+        var legend = this.barChart.grp.append("g")
+            .attr({
+                id: "barLegend",
+                transform: "translate(" + this.barChart.width + ",0)"
+            });
 
+        var legendPos = legend.selectAll("barLegendPos")
+            .data([ { color: "#e80c7a", text: "Weekdays" },
+                    { color: "#ffffff", text: "Weekends" }])
+            .enter()
+            .append("g")
+            .attr("class", "barLegendPos");
+            
+        legendPos.append("rect")
+            .attr({
+                x: 0,
+                y: function (d, i) { return i * 20  },
+                width: 10,
+                height: 10
+            })
+            .style("fill", function (d) { return d.color; });
+       
+        legendPos.append("text")
+            .attr({
+                x: 12,
+                y: function (d, i) { return i * 20 + 10 }
+            })
+            .text(function (d) { return d.text })
+            .style("font-size", "11px");
 
         this.updateBarChart();
     };
 
 
     mobility_tooltip.prototype.updateBarChart = function () {
+    	/// <summary>
+    	/// 
+    	/// </summary>
         var that = this;
         var firstDay = new Date(this.startTime);
         firstDay.setHours(0, 0, 0, 0);
