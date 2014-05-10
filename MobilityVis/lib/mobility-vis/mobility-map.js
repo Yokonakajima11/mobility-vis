@@ -401,6 +401,7 @@ var mobility_map = (function () {
             .style("fill", this.colorScale(0))
             .style("stroke", "#E80C7A")
             .style("stroke-width", 2)
+            .style("cursor", (this.animating)?"default":"pointer")
             .on("mouseover", function (d) { if(!chart.detailView) chart.hoverDetails(d); })
             .on("mouseout", function () { if (!chart.detailView) return chart.hideHoverDetails(); })
             .on("click", function (d) { if (!chart.animating) return chart.showDetails(d); });
@@ -408,7 +409,8 @@ var mobility_map = (function () {
         marker.selectAll("circle").transition().duration(100)
             .attr("r", function (d) {
                 return chart.radiusScale(d.count)
-                })
+            })
+            .style("cursor", (this.animating) ? "default" : "pointer")
             .style("fill", function (d) {
                 if (d.filtered)
                     return chart.colorScale(d.avgTime);
@@ -601,7 +603,7 @@ var mobility_map = (function () {
         /// </summary>
         var chart = this;
         this.onMapMove();
-        this.gui.update();
+        this.gui.update(this.startTime, this.endTime);
         this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 40) + ",10)");
     };
 
@@ -852,9 +854,7 @@ var mobility_map = (function () {
     };
 
     mobility_map.prototype.stopAnimating = function () {
-        this.animating = false;
-
-        
+        this.animating = false;       
 
         this.gui.unblockGui();
     };

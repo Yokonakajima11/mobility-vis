@@ -62,17 +62,18 @@ var mobility_tooltip = (function () {
            .attr("class", "tile");
 
         var openGrp = this.parent.append("g")
-       .on("click", function () {  
-           that.closeFun();
-       })
-       .on("mouseover", function () {
-           d3.select(this).select("polyline").style("fill", "#FFFFFF");
-           d3.select(this).select("text").style("fill", "#FFFFFF");
-       })
-       .on("mouseout", function () {
-           d3.select(this).select("polyline").style("fill", "#eeeeee");
-           d3.select(this).select("text").style("fill", null);
-       });;
+            .attr("class", "button")
+            .on("click", function () {  
+                that.closeFun();
+            })
+            .on("mouseover", function () {
+                d3.select(this).select("polyline").style("fill", "#FFFFFF");
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function () {
+                d3.select(this).select("polyline").style("fill", "#eeeeee");
+                d3.select(this).select("text").style("fill", null);
+            });
 
         openGrp.append("rect")
             .attr("x", 0)
@@ -212,7 +213,8 @@ var mobility_tooltip = (function () {
     mobility_tooltip.prototype.updateBarChart = function () {
     	/// <summary>
     	/// 
-    	/// </summary>
+        /// </summary>
+        console.log(this.data.dayData);
         var that = this;
         var firstDay = new Date(this.startTime);
         firstDay.setHours(0, 0, 0, 0);
@@ -238,10 +240,17 @@ var mobility_tooltip = (function () {
 
         allBars.transition().duration(1000)
             .attr("x", function (d) {
+
                 return that.barChart.x(d.date);
             })
             .attr("width", this.barChart.x.rangeBand())
-            .attr("y", function (d) { return that.barChart.y(d.length); });
+            .attr("y", function (d) {
+                return that.barChart.y(d.length);
+            })
+            .attr("height", function (d) {
+                return that.barChart.height - that.barChart.y(d.length);
+            }
+            );
 
         allBars.enter().append("rect")
             .style("fill", function (d) {
@@ -258,7 +267,9 @@ var mobility_tooltip = (function () {
             })
             .transition()
             .duration(1000)
-            .attr("y", function (d) { return that.barChart.y(d.length); })
+            .attr("y", function (d) {
+                return that.barChart.y(d.length);
+            })
             .attr("height", function (d) { return that.barChart.height - that.barChart.y(d.length); }
             )       
 
@@ -549,6 +560,7 @@ var mobility_tooltip = (function () {
 
         var switchBtnGrp = radialChartsGrp.append("g")
             .attr("id", "switchButton")
+            .attr("class", "button")
             .on("click", function () {
                 d3.selectAll(".radialChart")
                     .style("visibility", "visible");

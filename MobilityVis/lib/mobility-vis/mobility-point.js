@@ -81,6 +81,9 @@ var mobility_point = (function () {
         var that = this;
         var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         this.buckets = [];
+
+        this.hourData = [];
+        this.dayData = [];
         days.forEach(function (d) {
             var ind = that.buckets.push({ day: d, total: 0, timeBucket: [] });
             for (var i = 0; i < 24; i++)

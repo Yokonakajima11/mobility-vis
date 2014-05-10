@@ -58,7 +58,7 @@ text {
     fill: #eeeeee;
     font-family: 'Segoe UI';
     font-variant: small-caps;
-    cursor:default;
+    cursor:inherit;
 }
 
     text.copyright {
@@ -127,6 +127,11 @@ text {
   fill: #eee;
   fill-opacity: .8;
 }
+
+.button {
+    cursor:pointer;
+}
+
 
 .buttonText {
     stroke: none;

@@ -71,6 +71,7 @@ var mobility_timeline = (function () {
         d3.selectAll(".resize.s").append("text").attr("class", "dateLabel dateString").attr("id", "endDate").text(mobility_timeline.formatDate(new Date(this.brush.extent()[1]))).attr("transform", "translate(-59,5)");
 
         var playBtnGrp = this.parent.append("g")
+            .attr("class", "button")
             .attr("transform", "translate(7.5,505)")
             .on("click", function () {
                 if (!that.playing && !that.pause) {
@@ -195,7 +196,7 @@ var mobility_timeline = (function () {
                 var exGrps = that.parent.selectAll(".extendedTimeline").data(playbackButtons).enter()
                     .append("g")
                     .attr("transform", function (d, i) { return "translate(7.5," + (535 + 30 * i) + ")"; })
-                    .attr("class", "extendedTimeline")
+                    .attr("class", "extendedTimeline button")
                     .attr("id", function (d) { return d.id; })
                    .on("click", function (d) {
                        d.clickFun(this);

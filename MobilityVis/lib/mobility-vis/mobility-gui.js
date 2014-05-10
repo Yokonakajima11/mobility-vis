@@ -150,7 +150,7 @@ var mobility_gui = (function () {
 
         var weekButtons = filterMenu.selectAll(".weekButton").data(this.weekData).enter()
             .append("g")
-            .attr("class", "weekButton")
+            .attr("class", "weekButton button")
             .on("click", function (d, i) {
                 that.weekData[i].clicked = !that.weekData[i].clicked;
                 if (that.weekData[i].clicked)
@@ -176,12 +176,11 @@ var mobility_gui = (function () {
         weekButtons.append("text")
             .attr("x", 20)
             .attr("y", function (d, i) { return (i + 1) * 20 - 2; })
-            .style("cursor", "default")
             .text(function (d) { return d.label });
 
         var PoDButtons = filterMenu.selectAll(".podButton").data(this.partOfDayData).enter()
             .append("g")
-            .attr("class", "podButton")
+            .attr("class", "podButton button")
             .on("click", function (d, i) {
                 that.partOfDayData[i].clicked = !that.partOfDayData[i].clicked;
                 if (that.partOfDayData[i].clicked)
@@ -207,10 +206,10 @@ var mobility_gui = (function () {
         PoDButtons.append("text")
             .attr("x", 115)
             .attr("y", function (d, i) { return (i + 1) * 20 - 2; })
-            .style("cursor", "default")
             .text(function (d) { return d.label });
 
         var resetButtonGrp = filterMenu.append("g")
+            .attr("class", "button")
             .on("click", function () {
                 that.weekData.forEach(function (d, i) {
                     if (d.clicked)
@@ -247,22 +246,23 @@ var mobility_gui = (function () {
             .text("Reset");
 
         var openGrp = filterMenu.append("g")
-        .on("click", function () {
-            if (!that.menuExpanded.filters && !that.blocked) {
-                that.openFilterMenu();
-            }
-            else {
-                that.closeFilterMenu();
-            }
-        })
-        .on("mouseover", function () {
-            d3.select(this).select("polyline").style("fill", "#FFFFFF");
-            d3.select(this).select("text").style("fill", "#FFFFFF");
-        })
-        .on("mouseout", function () {
-            d3.select(this).select("polyline").style("fill", "#eeeeee");
-            d3.select(this).select("text").style("fill", null);
-        });;
+            .attr("class", "button")
+            .on("click", function () {
+                if (!that.menuExpanded.filters && !that.blocked) {
+                    that.openFilterMenu();
+                }
+                else {
+                    that.closeFilterMenu();
+                }
+            })
+            .on("mouseover", function () {
+                d3.select(this).select("polyline").style("fill", "#FFFFFF");
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function () {
+                d3.select(this).select("polyline").style("fill", "#eeeeee");
+                d3.select(this).select("text").style("fill", null);
+            });
 
         openGrp.append("rect")
             .attr("x", 200)
