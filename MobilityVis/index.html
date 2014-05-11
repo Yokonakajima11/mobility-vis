@@ -4,8 +4,10 @@
     <link href="css/style.css" rel="stylesheet" />
     <script src="lib/d3.v3/d3.v3.js"></script>
     <script src="lib/polymaps/polymaps.js"></script>
+    <script src="lib/mobility-vis/mobility-datastore.js"></script>
     <script src="lib/mobility-vis/mobility-timeline.js"></script>
     <script src="lib/mobility-vis/mobility-map.js"></script>
+    <script src="lib/mobility-vis/mobility-overlay.js"></script>
     <script src="lib/mobility-vis/mobility-gui.js"></script>
     <script src="lib/mobility-vis/mobility-tooltip.js"></script>
     <script src="lib/mobility-vis/mobility-point.js"></script>
@@ -13,6 +15,7 @@
     <script src="lib/jquery/jquery.cookie-1.4.1.min.js"></script>
     <script src="lib/clusterfck/clusterfck-0.1.js"></script>
     <script src="lib/jStorage/jstorage.min.js"></script>
+    <script src="lib/angular/angular.min.js"></script>
     <script>
         var mmap;
         var CLIENT_ID = "4FFPRAEN5QDVQMSC4GUIOXWUV5HQ5G5JX00XDO1V0KH3MH1Y";
@@ -23,10 +26,18 @@
         $(document).ready(function () {
             po = org.polymaps;
 
+            mdata = new mobility_datastore("data/newdata.csv");
             
-            
-            mmap = new mobility_map("vismap", 55.751849, 12.535186);
-            $(window).resize(function () { mmap.redraw() });
+            //mmap = new mobility_map("vismap", 55.751849, 12.535186, mdata);
+            moverlay = new mobility_overlay("vismap", mdata);
+
+
+            $(window).resize(function () {
+                if (mmap)
+                    mmap.redraw();
+                else
+                    moverlay.redraw();
+            });
         })
     </script>
     <title>Visualizing Human Mobility</title>

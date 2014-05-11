@@ -66,10 +66,6 @@ text {
         font-variant: normal;
     }
 
-    text.vertical {
-        writing-mode: tb;
-        glyph-orientation-vertical: 0;
-    }
 
     text.scaleText {
         font-size: 12px;

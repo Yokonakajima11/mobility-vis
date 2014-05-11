@@ -162,7 +162,7 @@ var mobility_timeline = (function () {
                         shape: that.stopShape,
                         clickFun: function (theButton) {
                             that.stopPlaying();
-                            that.finishUpdate();
+                            that.visRef.updateTimeEnd();
                         }
                     },
                     {
@@ -245,7 +245,6 @@ var mobility_timeline = (function () {
         d3.select("#ticker").remove();
         this.visRef.stopAnimating();
         this.visRef.updateTime(this.currentStartTime, this.currentEndTime);
-        this.visRef.updateTimeEnd();
         
         d3.select("#playButton").attr("d", this.playShape);//attr("points", this.play);
         this.parent.select("#timelineBg")
@@ -271,8 +270,8 @@ var mobility_timeline = (function () {
 
         }
         else if (that.currentTime >= that.currentEndTime) {
-            this.stopPlaying();
-            this.finishUpdate();
+            this.stopPlaying();            
+            this.visRef.updateTimeEnd();
         }
     };
 
