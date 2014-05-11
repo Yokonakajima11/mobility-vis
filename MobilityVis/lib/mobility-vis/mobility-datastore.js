@@ -269,6 +269,53 @@ var mobility_datastore = (function () {
     };
 
 
+    mobility_datastore.prototype.makeGraph = function () {
+        var storage = this;
+        var allPoints = this.updatePoints(this.startTime, this.endTime, false);
+        this.updateConnections(this.startTime, this.endTime, false);
+
+        //CHANGE INDEX TO CHANGE TREE
+        var graph = { point: allPoints[1], children: [] };
+        var visited = [allPoints[1].id];
+
+
+        var toDo = [graph];
+        while (toDo.length != 0) {
+      
+            var newToDo = [];
+            for(var i = 0; i<toDo.length; i++){
+                var ourNbs = neighbours(toDo[i].point.id);
+
+                for (var j = 0; j < ourNbs.length; j++) {
+                    if (visited.indexOf(ourNbs[j].id) == -1) {
+                        
+                        var newChild = { point: ourNbs[j], children: [] };
+                        toDo[i].children.push(newChild);
+                        newToDo.push(newChild);
+                        visited.push(ourNbs[j].id);
+                    }
+                }
+            }
+
+            toDo = newToDo;
+            
+        };
+
+        function neighbours(node) {
+            var result = [];
+            for (var i = 0; i < storage.data.connections.length; i++) {
+                if (storage.data.connections[i].from == node)
+                    result.push(storage.data.locDict[storage.data.connections[i].to]);
+                else if (storage.data.connections[i].to == node)
+                    result.push(storage.data.locDict[storage.data.connections[i].from]);
+            };
+            return result;
+        };
+
+        return graph;
+    };
+
+
     return mobility_datastore;
 
 })();

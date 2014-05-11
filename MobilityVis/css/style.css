@@ -169,3 +169,20 @@ text {
 .compass.active .active .direction {
   fill: #999;
 }
+
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+    fill: none;
+    stroke: #888;
+    stroke-width: 1.5px;
+}
