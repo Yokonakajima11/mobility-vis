@@ -133,7 +133,7 @@ var mobility_datastore = (function () {
 
         if (!append) {
             // Display only the points that have count > 0
-            this.data.location.sort(function (a, b) { return b.count - a.count; });
+            this.data.location.sort(function (a, b) { return b.time - a.time; });
             var slice = 0
             for (var i = 0; i < this.data.location.length; i++) {
                 if (this.data.location[i].count == 0) break;

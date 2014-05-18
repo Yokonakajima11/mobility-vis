@@ -33,8 +33,9 @@ var mobility_overlay = (function () {
         /// <field name="dataStore" type="mobility_datastore">Reference to data storage</param>
         this.dataStore = dataStore;
 
+        this.calendarPos = 0;
         this.colorScale = d3.scale.ordinal().range(["red", "blue", "green", "purple", "yellow"]);
-        this.radiusScale = d3.scale.pow().exponent(0.3).range([3, 10]).domain([1, 100]);
+        this.radiusScale = d3.scale.pow().exponent(0.3).range([3, 10]);
         this.tree = null;
         this.diagonal = d3.svg.diagonal.radial()
             //.source(function (d) {
@@ -81,12 +82,15 @@ var mobility_overlay = (function () {
             // Establishing initial time
             chart.data = dataStore.data; //chart.filterPoints(data);
             chart.graphData = chart.dataStore.makeGraph();
+            chart.dataStore.bucketData(function (d) { return true });
 
             var domain = [];
             for(var i = 0; i<5 && i<chart.data.location.length; i++)
                 domain.push(chart.data.location[i].id);
 
             chart.colorScale.domain(domain);
+            chart.radiusScale.domain(
+                d3.extent(chart.data.location, function(f){return f.time}));
 
             chart.drawAll();
         });
@@ -134,7 +138,7 @@ var mobility_overlay = (function () {
 
         node.append("circle")
             .attr("r", function (d) {
-                return chart.radiusScale(d.point.count);
+                return chart.radiusScale(d.point.time);
             })
             .on("click", function (d) {
                 chart.updateTree(d);
@@ -203,26 +207,72 @@ var mobility_overlay = (function () {
 
     mobility_overlay.prototype.drawCalendar = function () {
         var weeks = [];
+        var that = this;
 
+        var startWeek = (new Date(this.dataStore.startTime)).getWeek();
+        var startYear = (new Date(this.dataStore.startTime)).getFullYear();
+        var endYear = (new Date(this.dataStore.endTime)).getFullYear();
+
+        var bigGrp = this.visLayer.append("g")
+            .attr({
+                id: "calendarVis",
+                transform: "translate(1050, 50)"
+            })
+
+        var calGrp = bigGrp.append("g")
+            .attr({
+                id: "calGrp"
+            })
+            .on("mousewheel", function () {
+                that.calendarPos -= d3.event.wheelDelta;
+                d3.select(this).transition()
+                    .attr("transform", "translate(0," + that.calendarPos + ")");
+            });
+        calGrp.append("rect")
+            .attr({
+                x: 0,
+                y: 0,
+                width: 7 * 24 * 5,
+                height: (endYear - startYear + 1)*52*15
+
+            })
+            .style("opacity", "1")
+
+        for (var i = 0; i < 5 && i < this.data.location.length; i++) {
+
+            var dayGrps = calGrp.selectAll(".stuff")
+                .data(this.data.location[i].hourData).enter()
+                .append("rect")
+                .attr({
+                    x: 0,
+                    y: 0,
+                    height: 14,
+                    width: 5,
+                    "class": "hourTick",
+                    transform: function (d, i) {
+                        var dDate = new Date(d.timestamp);
+                        var dWeek = dDate.getWeek();
+                        var dYear = dDate.getFullYear();
+
+                        var dDoW = (dDate.getDay() + 6) % 7;
+                        var dHour = dDate.getHours();
+
+                        return "translate(" + (5 * (24 * dDoW + dHour)) + ","
+                            + ((dYear - startYear) * 52 + dWeek) * 15 + ")";
+                    }
+                })
+                .style("fill", this.colorScale(this.data.location[i].id));
+        }
        
-
-        weeks.forEach(function (w) {
-            for (var i = 0; i < 7; i++)
-                w.days.push(genRandomDay());
-
-            console.log(w);
-        });
 
         var DoW = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-        var calGrp = this.visLayer.append("g")
-            .attr("transform", "translate(1000, 500)");
 
-        calGrp.selectAll(".dow").data(DoW).enter().append("g")
+        bigGrp.selectAll(".dow").data(DoW).enter().append("g")
             .append("text")
             .attr({
-                x: function (d, i) { return (24*i*5) + (12*5)},
-                y: 10
+                x: function (d, i) { return (24*i*5) + 40},
+                y: 450
             })
             .text(function (d) { return d });
         
@@ -237,37 +287,35 @@ var mobility_overlay = (function () {
             })
             .text(function (d) { return d.nr });
 
-        
-        var dayGrps = weekGrps.selectAll("g").data(function (d) { return d.days }).enter()
-            .append("g")
-            .attr("transform", function(d,i) { return "translate("+ (i * 5*24) +",0)";}) ;
-
-        dayGrps.append("line")
+        calGrp.selectAll(".weekLabel").data(d3.time.weeks(this.dataStore.startTime, this.dataStore.endTime)).enter()
+            .append("text")
             .attr({
-                x1: 0,
-                x2: 0,
+                x: 0,
+                y: 0,
+
+                transform: function (d) {
+                    var dWeek = d.getWeek();
+                    var dYear = d.getFullYear();
+                    return "translate(-70," + (((dYear - startYear) * 52 + dWeek) * 15 + 15) + ")";
+                }
+
+
+            })
+            .text(function (d) { return d3.time.format("%d %b %y")(d); });
+       
+        calGrp.selectAll("line").data([1, 2, 3, 4, 5, 6]).enter()
+            .append("line")
+            .attr({
+                x1: function (d) { return d * 24 * 5; },
+                x2: function (d) { return d * 24 * 5; },
                 y1: 0,
-                y2: 20
+                y2: (endYear - startYear + 1) * 52 * 15
             })
             .style("stroke", "white")
-            .style("stroke-width", "2px")
+            .style("stroke-width", "2px");
             
 
-        dayGrps.selectAll("rect").data(function(d) { return d}).enter()
-            .append("rect")
-            .attr({
-                x: function (d, i) { return i * 5 },
-                y: 0,
-                height: 15,
-                width: 5
-            })
-            .style("fill", function (d) {
-                if (d == -1)
-                    return "none";
-                return colorScale(d)
-            });
-
-
+       
 
     };
 
@@ -337,3 +385,17 @@ var mobility_overlay = (function () {
     return mobility_overlay;
 
 })();
+
+
+// From http://weeknumber.net/how-to/javascript
+Date.prototype.getWeek = function () {
+    var date = new Date(this.getTime()); date.setHours(0, 0, 0, 0);
+
+
+    // Thursday in current week decides the year. 
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    // January 4 is always in week 1. 
+    var week1 = new Date(date.getFullYear(), 0, 4);
+    // Adjust to Thursday in week 1 and count number of weeks from date to week1. 
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+}

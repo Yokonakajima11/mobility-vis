@@ -212,7 +212,6 @@ var mobility_tooltip = (function () {
     	/// <summary>
     	/// 
         /// </summary>
-        console.log(this.data.dayData);
         var that = this;
         var firstDay = new Date(this.startTime);
         firstDay.setHours(0, 0, 0, 0);
