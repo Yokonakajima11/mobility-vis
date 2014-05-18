@@ -133,8 +133,6 @@ var mobility_tooltip = (function () {
 
         this.barChart.grp = this.parent.append("g")
             .attr("class", "barChart");
-        //var  this.barChart = this.barChart.grp.append("g")
-        //    .attr("class", "fullBarChart");
 
         this.barChart.grp.append("rect")
            .attr({ x: 0, y: 0, height: 10, width: 10, "class": "tile" });

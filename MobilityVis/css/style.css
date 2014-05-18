@@ -173,16 +173,16 @@ text {
 
 .node circle {
   fill: #fff;
-  stroke: steelblue;
+  stroke: #222;
   stroke-width: 1.5px;
 }
 
 .node {
-  font: 10px sans-serif;
+  font: 12px sans-serif;
 }
 
 .link {
     fill: none;
-    stroke: #888;
+    stroke: #666;
     stroke-width: 1.5px;
 }

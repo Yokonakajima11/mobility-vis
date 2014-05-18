@@ -269,14 +269,22 @@ var mobility_datastore = (function () {
     };
 
 
-    mobility_datastore.prototype.makeGraph = function () {
+    mobility_datastore.prototype.makeGraph = function (root) {
         var storage = this;
         var allPoints = this.updatePoints(this.startTime, this.endTime, false);
         this.updateConnections(this.startTime, this.endTime, false);
+        var rootIndex = 0;
 
+        if (root)
+            for (var i = 0; i < allPoints.length; i++)
+                if (allPoints[i].id == root.id) {
+                    rootIndex = i;
+                    break;
+                }
+        
         //CHANGE INDEX TO CHANGE TREE
-        var graph = { point: allPoints[1], children: [] };
-        var visited = [allPoints[1].id];
+        var graph = { point: allPoints[rootIndex], children: [] };
+        var visited = [allPoints[rootIndex].id];
 
 
         var toDo = [graph];

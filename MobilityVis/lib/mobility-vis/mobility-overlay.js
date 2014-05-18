@@ -33,9 +33,31 @@ var mobility_overlay = (function () {
         /// <field name="dataStore" type="mobility_datastore">Reference to data storage</param>
         this.dataStore = dataStore;
 
-
+        this.colorScale = d3.scale.ordinal().range(["red", "blue", "green", "purple", "yellow"]);
         this.radiusScale = d3.scale.pow().exponent(0.3).range([3, 10]).domain([1, 100]);
+        this.tree = null;
+        this.diagonal = d3.svg.diagonal.radial()
+            //.source(function (d) {
+            //    d.source["isSource"] = true; return d.source;
+            //})
+            //.target(function (d) { d.target["isSource"] = false; return d.target; })
+            .projection(function (d) {
+                
+                //var offset = 0
+                //var asdasdad = 0;
+                //if (d.depth)
+                //    asdasdad = (d.depth - 2) * 20
+                //if (d.point)
+                //    offset = 5 * d.point.locationName.length;
+                //if (d.isSource)
+                //    return [d.y + offset + asdasdad, d.x / 180 * Math.PI];
+                //else {
+                    
+                //    return [(d.y + asdasdad), d.x / 180 * Math.PI];
+                //}
 
+                return [d.y, d.x / 180 * Math.PI];
+            });
 
 
         this.vis.append("rect")
@@ -58,8 +80,14 @@ var mobility_overlay = (function () {
 
             // Establishing initial time
             chart.data = dataStore.data; //chart.filterPoints(data);
-            
             chart.graphData = chart.dataStore.makeGraph();
+
+            var domain = [];
+            for(var i = 0; i<5 && i<chart.data.location.length; i++)
+                domain.push(chart.data.location[i].id);
+
+            chart.colorScale.domain(domain);
+
             chart.drawAll();
         });
 
@@ -78,62 +106,105 @@ var mobility_overlay = (function () {
 
     mobility_overlay.prototype.drawTree = function () {
         var chart = this;
-        var diameter = 900;
+        var diameter = 1020;
 
-        var tree = d3.layout.tree()
+        this.tree = d3.layout.tree()
             .size([360, diameter / 2 - 120])
-            .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
-
-        var diagonal = d3.svg.diagonal.radial()
-            .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
+            .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });      
 
         var svg = this.visLayer
-          .append("g")
-            .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
+            .append("g")
+            .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")")
+            .attr("id", "treeGrp");
+
+        var nodes = this.tree.nodes(this.graphData),
+            links = this.tree.links(nodes);
+
+        var link = svg.append("g").attr("id", "linkGrp").selectAll(".link")
+            .data(links)
+            .enter().append("path")
+            .attr("class", "link")
+            .attr("d", this.diagonal);
+
+        var node = svg.selectAll(".node")
+            .data(nodes, function (d) { return d.point.id; })
+            .enter().append("g")
+            .attr("class", "node")
+            .attr("transform", function (d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
+
+        node.append("circle")
+            .attr("r", function (d) {
+                return chart.radiusScale(d.point.count);
+            })
+            .on("click", function (d) {
+                chart.updateTree(d);
+            })
+            .style("fill", function (d) {
+                if (chart.colorScale.domain().indexOf(d.point.id) != -1)
+                    return chart.colorScale(d.point.id);
+                else
+                    return "white";
+                
+            });
+
+        node.append("text")
+            .attr("dy", ".31em")
+            .attr("text-anchor", function (d) { return d.x < 180 ? "start" : "end"; })
+            .attr("transform", function (d) { return d.x < 180 ? "translate(12)" : "rotate(180)translate(-8)"; })
+            .text(function (d) {
+                return d.point.locationName.substr(0, 16) + (((d.point.locationName.length) > 16) ? "..." : "");
+            })
+    };
+
+    mobility_overlay.prototype.updateTree = function (aNode) {
+        this.graphData = this.dataStore.makeGraph(aNode.point);
+        var chart = this;
+
+        var diagonal = d3.svg.diagonal.radial()
+            .projection(function (d) { return [d.y, d.x / 180 * Math.PI]; });
+
+        var nodes = this.tree.nodes(this.graphData),
+            links = this.tree.links(nodes);
+
+        this.visLayer.selectAll(".link").remove();
+        this.visLayer.selectAll(".node").selectAll("text").remove();
 
         
-            var nodes = tree.nodes(this.graphData),
-                links = tree.links(nodes);
+        var redrawn = false;
+        var node = this.visLayer.select("#treeGrp").selectAll(".node")
+            .data(nodes, function (d) {
+                return d.point.id;
+            })
+            .transition()
+            .duration(1000)
+            .attr("transform", function (d) {
+                return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")";
+            })
+            .each("end", function () {
+                if (!redrawn) {
+                    var link = chart.visLayer.select("#linkGrp").selectAll(".link")
+                        .data(links)
+                        .enter().append("path")
+                        .attr("class", "link")
+                        .attr("d", chart.diagonal);
 
-            var link = svg.selectAll(".link")
-                .data(links)
-              .enter().append("path")
-                .attr("class", "link")
-                .attr("d", diagonal);
-
-            var node = svg.selectAll(".node")
-                .data(nodes)
-              .enter().append("g")
-                .attr("class", "node")
-                .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
-
-            node.append("circle")
-                .attr("r", function (d) {
-                    return chart.radiusScale(d.point.count);
-                });
-
-            node.append("text")
-                .attr("dy", ".31em")
-                .attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
-                .attr("transform", function(d) { return d.x < 180 ? "translate(8)" : "rotate(180)translate(-8)"; })
-                .text(function(d) { return d.point.locationName; });
-
+                    chart.visLayer.select("#treeGrp").selectAll(".node").append("text")
+                        .attr("dy", ".31em")
+                        .attr("text-anchor", function (d) { return d.x < 180 ? "start" : "end"; })
+                        .attr("transform", function (d) { return d.x < 180 ? "translate(12)" : "rotate(180)translate(-8)"; })
+                        .text(function (d) {
+                            return d.point.locationName.substr(0, 16) + (((d.point.locationName.length) > 16) ? "..." : "");
+                        })
+                    redrawn = true;
+                }
+            });
 
     };
 
     mobility_overlay.prototype.drawCalendar = function () {
-        var weeks = [{ nr: 23, days: [] },
-            { nr: 24, days: [] },
-            { nr: 25, days: [] },
-            { nr: 26, days: [] },
-            { nr: 27, days: [] },
-            { nr: 28, days: [] },
-            { nr: 30, days: [] },
-            { nr: 31, days: [] },
-            { nr: 32, days: [] },
-            { nr: 33, days: [] }];
+        var weeks = [];
 
-        var colorScale = d3.scale.category10().domain([1, 10]);
+       
 
         weeks.forEach(function (w) {
             for (var i = 0; i < 7; i++)
@@ -197,48 +268,54 @@ var mobility_overlay = (function () {
             });
 
 
-        function genRandomDay() {
-            var sum = 0;
-            var day = [];
-            
-            while (day.length < 24) {
-                var hours = random(1, 24 - day.length);
-                //alert("hours: " + hours + " day.length " + day.length);
-                for (var i = 0; i < hours; i++) {
-                    var loc = random(1, 10)
-                    day.push((loc>4)?-1:loc);
-                }
-            }
-            return day;
-        };
-
-        function random(a,b) {
-
-            return Math.floor((Math.random() * b) + a)
-        };
 
     };
 
     mobility_overlay.prototype.drawInfo = function () {
+        var chart = this;
+
         var infoGrp = this.visLayer.append("g").attr("class", "info");
 
         var ttGrp = infoGrp.append("g").attr("id", "tooltipInfo");
-        var texts = ["Top 5 locations", 
-                     this.dataStore.data.location[0].locationName,
-                     this.dataStore.data.location[1].locationName,
-                     this.dataStore.data.location[2].locationName,
-                     this.dataStore.data.location[3].locationName,
-                     this.dataStore.data.location[4].locationName];
-
+        var texts = [];
+        for (var i = 0; i < 5 && i < chart.data.location.length; i++)
+            texts.push(chart.data.location[i]);
 
         ttGrp.append("text")
-            .attr("y", 36 + 28)
-            .selectAll("tspan").data(texts).enter()
-            .append("tspan")
-            .attr("dy", 36)
-            .attr("x", 7)
-            .text(function (t) { return t; })
-.style("font-size", "36");
+            .attr({
+                x: 0,
+                y: 0
+            })
+            .text("Top 5 locations")
+            .style("font-size", "36");
+
+        var eachText = ttGrp.selectAll("g").data(texts).enter()
+            .append("g")
+            .attr("transform", function (d, i) {
+                return "translate(0," + (i * 34 + 30) + ")"
+            });
+
+
+        eachText.append("text")
+            .attr({
+                x: 34,
+                y: 20
+            })
+            .text(function (t) { return t.locationName; })
+            .style("font-size", "24");
+
+        eachText.append("rect")
+            .attr({
+                x: 0,
+                y: 0,
+                width: 24,
+                height: 24
+            })
+            .style("fill", function (d, i) {
+                return chart.colorScale(d.id)
+            });
+
+        
 
       
             
