@@ -34,7 +34,7 @@ var mobility_overlay = (function () {
         this.dataStore = dataStore;
 
         this.calendarPos = 0;
-        this.colorScale = d3.scale.ordinal().range(["red", "blue", "green", "purple", "yellow"]);
+        this.colorScale = d3.scale.ordinal().range(["#aa0000", "#0000aa", "green", "purple", "yellow", "pink"]);
         this.radiusScale = d3.scale.pow().exponent(0.3).range([3, 10]);
         this.tree = null;
         this.diagonal = d3.svg.diagonal.radial()
@@ -147,14 +147,15 @@ var mobility_overlay = (function () {
                 if (chart.colorScale.domain().indexOf(d.point.id) != -1)
                     return chart.colorScale(d.point.id);
                 else
-                    return "white";
-                
-            });
+                    return "white";                
+            })
+            .style("cursor", "pointer");
 
         node.append("text")
             .attr("dy", ".31em")
             .attr("text-anchor", function (d) { return d.x < 180 ? "start" : "end"; })
             .attr("transform", function (d) { return d.x < 180 ? "translate(12)" : "rotate(180)translate(-8)"; })
+            .style("pointer-events", "none")
             .text(function (d) {
                 return d.point.locationName.substr(0, 16) + (((d.point.locationName.length) > 16) ? "..." : "");
             })
@@ -196,6 +197,7 @@ var mobility_overlay = (function () {
                         .attr("dy", ".31em")
                         .attr("text-anchor", function (d) { return d.x < 180 ? "start" : "end"; })
                         .attr("transform", function (d) { return d.x < 180 ? "translate(12)" : "rotate(180)translate(-8)"; })
+                        .style("pointer-events", "none")
                         .text(function (d) {
                             return d.point.locationName.substr(0, 16) + (((d.point.locationName.length) > 16) ? "..." : "");
                         })
@@ -206,40 +208,67 @@ var mobility_overlay = (function () {
     };
 
     mobility_overlay.prototype.drawCalendar = function () {
-        var weeks = [];
         var that = this;
+        var DoW = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        var arrowShape = "M -7.5,0 L0,15 L7.5,0 L0,0";
 
         var startWeek = (new Date(this.dataStore.startTime)).getWeek();
         var startYear = (new Date(this.dataStore.startTime)).getFullYear();
         var endYear = (new Date(this.dataStore.endTime)).getFullYear();
+        var endWeek = (new Date(this.dataStore.endTime)).getWeek();
+        var endMonth = (new Date(this.dataStore.endTime)).getMonth();
+
+        if (endMonth == 11 && endWeek == 1)
+            endWeek = 53;
+
+        var endPos = 460 - (((endYear - 1) - startYear + 1) * 52 * 15 + (endWeek + 2) * 15) + 405;
+        var startPos = 460 - startWeek * 15;
+
+        this.calendarPos = endPos;
 
         var bigGrp = this.visLayer.append("g")
             .attr({
                 id: "calendarVis",
-                transform: "translate(1050, 50)"
+                transform: "translate(1050, 100)"
             })
 
-        var calGrp = bigGrp.append("g")
+        var clipMask = bigGrp.append("defs").append("clipPath")
+            .attr("id", "calClip")
+            .append("rect")
             .attr({
-                id: "calGrp"
+                x: -100,
+                y: 460,
+                width: 7 * 24 * 5 + 100,
+                height: 400
+            });
+
+        var calGrp = bigGrp.append("g")
+            .attr("clip-path", "url(#calClip)")
+            .append("g")
+            .attr({
+                id: "calGrp",
+                "transform": "translate(0," + this.calendarPos + ")"
             })
             .on("mousewheel", function () {
+                
                 that.calendarPos -= d3.event.wheelDelta;
+                if (that.calendarPos < endPos)
+                    that.calendarPos = endPos;
+                else if(that.calendarPos > startPos)
+                    that.calendarPos = startPos;
                 d3.select(this).transition()
                     .attr("transform", "translate(0," + that.calendarPos + ")");
             });
         calGrp.append("rect")
             .attr({
                 x: 0,
-                y: 0,
+                y: startWeek * 15,
                 width: 7 * 24 * 5,
-                height: (endYear - startYear + 1)*52*15
-
-            })
-            .style("opacity", "1")
+                height: (((endYear - 1) - startYear + 1) * 52 * 15 + (endWeek+1) * 15) - startWeek * 15,
+                "class": "tile"
+            });
 
         for (var i = 0; i < 5 && i < this.data.location.length; i++) {
-
             var dayGrps = calGrp.selectAll(".stuff")
                 .data(this.data.location[i].hourData).enter()
                 .append("rect")
@@ -252,21 +281,31 @@ var mobility_overlay = (function () {
                     transform: function (d, i) {
                         var dDate = new Date(d.timestamp);
                         var dWeek = dDate.getWeek();
+                        var dMonth = dDate.getMonth();
                         var dYear = dDate.getFullYear();
-
+                        if (dWeek == 1 && dMonth == 11)
+                            dWeek = 53;
                         var dDoW = (dDate.getDay() + 6) % 7;
                         var dHour = dDate.getHours();
 
                         return "translate(" + (5 * (24 * dDoW + dHour)) + ","
                             + ((dYear - startYear) * 52 + dWeek) * 15 + ")";
+                    },
+                    id: function (d, i) {
+                        var dDate = new Date(d.timestamp);
+                        var dWeek = dDate.getWeek();
+                        var dMonth = dDate.getMonth();
+                        var dYear = dDate.getFullYear();
+                        if (dWeek == 1 && dMonth == 11)
+                            dWeek = 53;
+                        var dDoW = (dDate.getDay() + 6) % 7;
+                        var dHour = dDate.getHours();
+
+                        return "ID_" + dDate.getDate() + "_" + dWeek + "_" + dMonth + "_" + dYear + "__" + dHour;
                     }
                 })
                 .style("fill", this.colorScale(this.data.location[i].id));
-        }
-       
-
-        var DoW = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
+        }       
 
         bigGrp.selectAll(".dow").data(DoW).enter().append("g")
             .append("text")
@@ -275,47 +314,86 @@ var mobility_overlay = (function () {
                 y: 450
             })
             .text(function (d) { return d });
-        
-        var weekGrps = calGrp.selectAll(".weekGrp")
-            .data(weeks).enter().append("g")
-            .attr("transform", function(d,i) { return "translate(0,"+ ( 20 * i + 40) + ")";}) ;
 
-        weekGrps.append("text")
-            .attr({
-                x: -30,
-                y: 14
-            })
-            .text(function (d) { return d.nr });
-
-        calGrp.selectAll(".weekLabel").data(d3.time.weeks(this.dataStore.startTime, this.dataStore.endTime)).enter()
+        calGrp.selectAll(".weekLabel").data(d3.time.mondays(this.dataStore.startTime - 1000 * 60 * 60 * 24 * 7,
+            this.dataStore.endTime)).enter()
             .append("text")
             .attr({
                 x: 0,
                 y: 0,
-
                 transform: function (d) {
                     var dWeek = d.getWeek();
+                    var dMonth = d.getMonth();
                     var dYear = d.getFullYear();
-                    return "translate(-70," + (((dYear - startYear) * 52 + dWeek) * 15 + 15) + ")";
+                    if (dWeek == 1 && dMonth == 11)
+                        dWeek = 53;
+                    return "translate(-65," +  ((((dYear - startYear) * 52 + dWeek) * 15) + 13) + ")";
                 }
-
-
             })
-            .text(function (d) { return d3.time.format("%d %b %y")(d); });
+            .text(function (d) { return d3.time.format("%d %b %y")(d); })
+            .style("font-size", "12px");
        
         calGrp.selectAll("line").data([1, 2, 3, 4, 5, 6]).enter()
             .append("line")
             .attr({
                 x1: function (d) { return d * 24 * 5; },
                 x2: function (d) { return d * 24 * 5; },
-                y1: 0,
-                y2: (endYear - startYear + 1) * 52 * 15
+                y1: startWeek * 15,
+                y2: (((endYear - 1) - startYear + 1) * 52 * 15 + (endWeek + 1) * 15)
             })
             .style("stroke", "white")
             .style("stroke-width", "2px");
             
+        var buttons = [
+            {
+                rotate: 180,
+                id: "upScroll",
+                fun: function () {
+                    that.calendarPos += 60;
+                    d3.select("#downScroll").style("visibility", "visible");
+                    if (that.calendarPos < endPos) {
+                        that.calendarPos = endPos;
+                    }
+                    else if (that.calendarPos > startPos) {
+                        d3.select("#upScroll").style("visibility", "hidden");
+                        that.calendarPos = startPos;
+                    }
+                    d3.select("#calGrp").transition()
+                        .attr("transform", "translate(0," + that.calendarPos + ")");
+                }
+            },
+            {
+                rotate: 0,
+                id: "downScroll",
+                fun: function () {
+                    that.calendarPos -= 60;
+                    d3.select("#upScroll").style("visibility", "visible");
+                    if (that.calendarPos < endPos) {
+                        d3.select("#downScroll").style("visibility", "hidden");
+                        that.calendarPos = endPos;
+                    }
+                    else if (that.calendarPos > startPos) {
+                        that.calendarPos = startPos;
+                    }
+                    d3.select("#calGrp").transition()
+                        .attr("transform", "translate(0," + that.calendarPos + ")");
+                }
+            }];
 
-       
+        bigGrp.selectAll(".timelineButton").data(buttons).enter()
+            .append("path")
+            .attr({
+                d: arrowShape,
+                id: function (d) { return d.id; },
+                transform: function (d, i) {
+                    return "translate(" + (5 * (24 * 6 + 24) + 15) + "," + (i * 360 + 475) + ")rotate(" + d.rotate + ")";
+                },
+                "class": "timelineButton button"
+            })
+            .on("click", function (d) { d.fun() });
+
+
+        d3.select("#downScroll").style("visibility", "hidden");
 
     };
 
