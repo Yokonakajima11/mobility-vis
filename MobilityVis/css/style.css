@@ -61,6 +61,10 @@ text {
     cursor:inherit;
 }
 
+    text.darkText {
+        fill: #555;
+    }
+
     text.copyright {
         fill: #000000;
         font-variant: normal;
@@ -183,6 +187,7 @@ text {
 
 .link {
     fill: none;
-    stroke: #666;
+    stroke: #ABB4BC;
     stroke-width: 1.5px;
+  
 }
