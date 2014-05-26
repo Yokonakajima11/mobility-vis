@@ -14,7 +14,10 @@ var mobility_overlay = (function () {
         // <field name="vis" type="String">Parent container ID</field>
         this.parentId = divId;
         /// <field name="vis" type="d3.selection()">Main SVG </field>
-        this.vis = d3.select("#" + divId).append("svg:svg");
+        if (d3.select("svg").empty())
+            this.vis = d3.select("#" + divId).append("svg:svg");
+        else
+            this.vis = d3.select("svg"); 
         /// <field name="visLayer" type="d3.selection()">Visualisation layer</field>
         this.visLayer = null;
 
@@ -32,6 +35,8 @@ var mobility_overlay = (function () {
 
         /// <field name="dataStore" type="mobility_datastore">Reference to data storage</param>
         this.dataStore = dataStore;
+
+        this.mapRef = null;
 
         this.currentCenterId;
 
@@ -65,19 +70,21 @@ var mobility_overlay = (function () {
             });
 
 
-        this.vis.append("rect")
-            .attr({
-                x: 0,
-                y: 0,
-                width: document.getElementById(this.parentId).offsetWidth,
-                height: document.getElementById(this.parentId).offsetHeight,
-                id: "background",
+        
+
+        this.visLayer = this.vis.append("g").attr("id", "overlayLayer");
+        this.visLayer.append("rect")
+                    .attr({
+                        x: 0,
+                        y: 0,
+                        width: document.getElementById(this.parentId).offsetWidth,
+                        height: document.getElementById(this.parentId).offsetHeight,
+                        id: "background",
                 
 
-                }).style("fill","#C9C9C9");
+                    }).style("fill","#C9C9C9");
 
-        this.visLayer = this.vis.append("g").attr("class", "vislayer");
-
+        this.infoLayer = this.visLayer.append("g").attr("id", "infoLayer");
 
         addEventListener("dataReady", function (e) {
             //Data has been loaded - initialize
@@ -107,12 +114,13 @@ var mobility_overlay = (function () {
     
     mobility_overlay.prototype.drawAll = function () {
 
-        this.visLayer.append("rect")
+        this.infoLayer.append("rect")
             .attr({
                 x: 970,
                 y: 10,
                 width: document.getElementById(this.parentId).offsetWidth - 10 - 970,
                 height: document.getElementById(this.parentId).offsetHeight - 20,
+                id: "infoBg",
                 "class": "tile"        
             });
 
@@ -258,7 +266,7 @@ var mobility_overlay = (function () {
 
         this.calendarPos = endPos;
 
-        var bigGrp = this.visLayer.append("g")
+        var bigGrp = this.infoLayer.append("g")
             .attr({
                 id: "calendarVis",
                 transform: "translate(1040, -400)"
@@ -499,7 +507,7 @@ var mobility_overlay = (function () {
     mobility_overlay.prototype.drawInfo = function () {
         var chart = this;
 
-        var infoGrp = this.visLayer.append("g").attr("class", "info");
+        var infoGrp = this.infoLayer.append("g").attr("class", "info");
 
         var sparkW = 7 * 24 * 5;
         var sparkH = 30;
@@ -683,6 +691,42 @@ var mobility_overlay = (function () {
                 width: document.getElementById(this.parentId).offsetWidth,
                 height: document.getElementById(this.parentId).offsetHeight
             });
+    };
+
+    mobility_overlay.prototype.setMapRef = function (ref) {
+        this.mapRef = ref;
+
+    };
+
+    mobility_overlay.prototype.closeOverlay = function () {
+        var chart = this;
+        var event = new CustomEvent("overlayClosed", { detail: {} });
+        
+        var once = false;
+
+        this.visLayer.select("#infoLayer")
+            .transition()
+            .attr("transform", "translate(1900)")
+            .each("end", function() {
+                chart.visLayer.selectAll("#background")
+                    .transition()
+                    .duration(1000)
+                    .style("opacity", 0);
+
+                chart.visLayer.selectAll
+                    .each("end", function () {
+                        d3.select(this).remove();
+                        if (!once) {
+                            dispatchEvent(event);
+                            once = true;
+                        }
+
+
+                    });
+            })
+
+
+
     };
 
     return mobility_overlay;

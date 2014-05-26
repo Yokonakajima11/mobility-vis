@@ -19,7 +19,10 @@ var mobility_map = (function () {
         // <field name="vis" type="String">Parent container ID</field>
         this.parentId = divId;                                                                                  
         /// <field name="vis" type="d3.selection()">Main SVG </field>
-        this.vis = d3.select("#" + divId).append("svg:svg");
+        if (d3.select("svg").empty())
+            this.vis = d3.select("#" + divId).append("svg:svg");
+        else
+            this.vis = d3.select("svg");
         /// <field name="visLayer" type="d3.selection()">Visualisation layer</field>
         this.visLayer = null;
         /// <field name="guiLayer" type="d3.selection()">GUI layer</field>
@@ -111,21 +114,29 @@ var mobility_map = (function () {
             
             // Establishing initial time
             chart.data = dataStore.data; //chart.filterPoints(data);
-            chart.startTime = (e.detail.startTime + e.detail.endTime) / 2;// ime(chart.data.time[0].start+chart.data.time[chart.data.time.length - 1].end)/2;
+            chart.startTime = e.detail.startTime;//(e.detail.startTime + e.detail.endTime) / 2;// ime(chart.data.time[0].start+chart.data.time[chart.data.time.length - 1].end)/2;
             chart.endTime = e.detail.endTime;//chart.data.time[chart.data.time.length - 1].end;
             chart.timelineRef = new mobility_timeline(chart.timelineLayer, chart, chart.data.time[0].start, chart.data.time[chart.data.time.length - 1].end, chart.startTime);           
             
+            
+        });
+
+        this.map.center({ lat: lat, lon: long });
+
+
+        addEventListener("overlayClosed", function () {
             // Whenever the map moves, update the marker positions.
             chart.map.on("move", function () { chart.onMapMove() });
 
             // Begin
             chart.updatePoints(false);
-           // chart.updateConnections(false, 1500);
+            // chart.updateConnections(false, 1500);
             chart.updateTimeEnd();
+
         });
 
 
-        this.map.center({ lat: lat, lon: long});
+        
     };
 
     /*----------------------------------------------------------------------  Data methods    ---------------------------------------------------------------------*/

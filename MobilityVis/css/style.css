@@ -178,7 +178,7 @@ text {
 .node circle {
   fill: #fff;
   stroke: #222;
-  stroke-width: 1.5px;
+  stroke-width: 1px;
 }
 
 .node {
