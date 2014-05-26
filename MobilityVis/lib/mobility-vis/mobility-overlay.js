@@ -103,7 +103,7 @@ var mobility_overlay = (function () {
 
             chart.colorScale.domain(domain);
             chart.radiusScale.domain(
-                d3.extent(chart.data.location, function(f){return f.time}));
+                d3.extent(chart.data.location, function(f){return f.count}));
 
             chart.drawAll();
         });
@@ -161,7 +161,7 @@ var mobility_overlay = (function () {
 
         node.append("circle")
             .attr("r", function (d) {
-                return chart.radiusScale(d.point.time);
+                return chart.radiusScale(d.point.count);
             })
             .attr("id", function(d) {
                 return "treePoint_" + d.point.id;
@@ -700,7 +700,7 @@ var mobility_overlay = (function () {
 
     mobility_overlay.prototype.closeOverlay = function () {
         var chart = this;
-        var event = new CustomEvent("overlayClosed", { detail: {} });
+       // var event = new CustomEvent("overlayClosed", { detail: {} });
         
         var once = false;
 
@@ -713,18 +713,106 @@ var mobility_overlay = (function () {
                     .duration(1000)
                     .style("opacity", 0);
 
-                chart.visLayer.selectAll
+                chart.visLayer.selectAll(".link")
+                    .transition()
+                    .duration(1000)
+                    .style("opacity", 0);
+
+                chart.visLayer.selectAll(".node text").remove();
+
+                chart.visLayer.select("#treeGrp")
+                    .transition()
+                    .duration(2000)
+                    .attr("transform", "translate(0,0)");
+
+                chart.visLayer.selectAll(".node circle")
+                    .on("click", null);
+
+
+                chart.visLayer.selectAll(".node")
+                    .transition()
+                    .duration(2000)
+                    .attr("transform", function (d) {
+
+
+                        var p = chart.mapRef.map.locationPoint({ lon: d.point.lon, lat: d.point.lat });
+                        return "translate(" + p.x + "," + p.y + ")";
+
+
+                    })                   
+
                     .each("end", function () {
-                        d3.select(this).remove();
-                        if (!once) {
-                            dispatchEvent(event);
-                            once = true;
-                        }
+                        var node = this;
+
+                        d3.select(this).select("circle")
+                            .transition()
+                            .duration(500)
+                            .attr("r", function (d) {
+                                return chart.mapRef.radiusScale(d.point.count)
+                            })
+                            .style("fill", function (d) {
+                                return chart.mapRef.colorScale(d.point.avgTime);
+                            })
+                            .style("stroke", function (d) {
+                                return d3.rgb(chart.mapRef.colorScale(d.point.avgTime)).darker();
+                            })
+                            .style("stroke-width", 2)
+                            .style("opacity", 0.9)
+                            .each("end", function () {
 
 
+                                if (!once) {
+                                    chart.mapRef.begin("#overlayLayer");
+                                    once = true;
+                                }
+
+                            });
                     });
             })
+    };
 
+    mobility_overlay.prototype.reopenOverlay = function () {
+        var diameter = 1000;
+        var chart = this;
+
+        this.visLayer.select("#treeGrp")
+                    .transition()
+                    .duration(1000)
+            .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")")
+
+        this.visLayer.select("#treeGrp").selectAll("circle")
+            .attr("r", function (d) {
+                return chart.radiusScale(d.point.count);
+            })
+            .attr("id", function (d) {
+                return "treePoint_" + d.point.id;
+            })
+            .on("click", function (d) {
+                chart.updateTree(d);
+            })
+            .style("fill", function (d) {
+                if (chart.colorScale.domain().indexOf(d.point.id) != -1)
+                    return chart.colorScale(d.point.id);
+                else
+                    return "white";
+            })
+            .style("cursor", "pointer")
+            .style("stroke", null)
+            .style("stroke-width", null);
+
+        chart.visLayer.selectAll("#background")
+                    .transition()
+                    .duration(1000)
+                    .style("opacity", 1)
+                    .each("end", function() {
+                        chart.visLayer.select("#infoLayer")
+                         .transition()
+                         .attr("transform", "translate(0,0)")
+                        
+                    });
+
+        this.graphData = this.dataStore.makeGraph();
+        this.updateTree(this.graphData);
 
 
     };

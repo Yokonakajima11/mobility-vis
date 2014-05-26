@@ -316,7 +316,7 @@ var mobility_gui = (function () {
         this.blocked = true;
         if (this.menuExpanded.filters)
             this.reopen = true;
-        this.hideDetailFrame();
+       // this.hideDetailFrame();
         this.closeFilterMenu();
 
         d3.select("#filterMenu").select("polyline")
@@ -354,7 +354,7 @@ var mobility_gui = (function () {
             .attr("class", "detailFrame")
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200)  + ", " + document.getElementById(this.parentId).offsetHeight + ")");
 
-
+        this.blockGui();
         grp.transition()
             .duration(500)
             .ease("linear")
@@ -372,7 +372,7 @@ var mobility_gui = (function () {
             .ease("elastic")
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200) + ", " + document.getElementById(this.parentId).offsetHeight + "0)")
             .remove();
-
+        this.unblockGui();
         delete this.currentTooltip;
         //this.currentTooltip = null;
 

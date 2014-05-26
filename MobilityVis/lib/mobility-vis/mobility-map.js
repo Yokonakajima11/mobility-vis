@@ -49,6 +49,8 @@ var mobility_map = (function () {
 
         /// <field name="dataStore" type="mobility_datastore">Reference to data storage</param>
         this.dataStore = dataStore;
+
+        this.overLayRef = null;
         /// <field name="dayOfWeekFilter" type="Array">Filter for days of the week. Days in the filter 
         /// (as integers) will not be displayed</field>
         this.dayOfWeekFilter = [];
@@ -117,26 +119,34 @@ var mobility_map = (function () {
             chart.startTime = e.detail.startTime;//(e.detail.startTime + e.detail.endTime) / 2;// ime(chart.data.time[0].start+chart.data.time[chart.data.time.length - 1].end)/2;
             chart.endTime = e.detail.endTime;//chart.data.time[chart.data.time.length - 1].end;
             chart.timelineRef = new mobility_timeline(chart.timelineLayer, chart, chart.data.time[0].start, chart.data.time[chart.data.time.length - 1].end, chart.startTime);           
-            
+            chart.map.center({ lat: lat, lon: long });
+
             
         });
-
-        this.map.center({ lat: lat, lon: long });
-
-
-        addEventListener("overlayClosed", function () {
-            // Whenever the map moves, update the marker positions.
-            chart.map.on("move", function () { chart.onMapMove() });
-
-            // Begin
-            chart.updatePoints(false);
-            // chart.updateConnections(false, 1500);
-            chart.updateTimeEnd();
-
-        });
-
 
         
+    };
+
+    mobility_map.prototype.begin = function (overlayRef) {
+        var chart = this;
+        // Whenever the map moves, update the marker positions.
+        this.map.on("move", function () { chart.onMapMove() });
+
+        // Begin
+        this.updatePoints(false);
+        this.visLayer.selectAll("circle")
+            .style("visibility", "hidden");
+
+
+        setTimeout(function () {
+            chart.visLayer.selectAll("circle")
+                .style("visibility", "visible");
+            d3.select(overlayRef).style("visibility", "hidden");
+        }, 500);
+
+
+        this.updateTimeEnd();
+
     };
 
     /*----------------------------------------------------------------------  Data methods    ---------------------------------------------------------------------*/
@@ -203,8 +213,7 @@ var mobility_map = (function () {
         newMarkers.append("svg:circle")
             .attr("class", "location")
             .attr("r", 0)
-            .attr("id", function(d) { return "location-" + d.id})
-            .style("fill-opacity", 0.9)
+            .attr("id", function (d) { return "location-" + d.id })
             .style("fill", this.colorScale(0))
             .style("stroke", "#E80C7A")
             .style("stroke-width", 2)
@@ -213,7 +222,8 @@ var mobility_map = (function () {
             .on("mouseout", function () { if (!chart.detailView) return chart.hideHoverDetails(); })
             .on("click", function (d) { if (!chart.animating) return chart.showDetails(d); });
 
-        marker.selectAll("circle").transition().duration(100)
+        marker.selectAll("circle").transition()
+            .duration(100)
             .attr("r", function (d) {
                 return chart.radiusScale(d.count)
             })
@@ -658,7 +668,7 @@ var mobility_map = (function () {
             this.data.location[i].filtered = true;
         }
 
-
+        this.gui.hideDetailFrame();
         this.gui.blockGui();
 
     };
@@ -667,6 +677,20 @@ var mobility_map = (function () {
         this.animating = false;       
 
         this.gui.unblockGui();
+    };
+
+    mobility_map.prototype.setOverlayRef = function (ref) {
+        this.overLayRef = ref;
+    };
+
+    mobility_map.prototype.reopenOverlay = function () {
+        d3.select(".vislayer").selectAll(".locationPoint").remove();
+        d3.select(".vislayer").selectAll(".connection").remove();
+
+        d3.select("#overlayLayer").style("visibility", "visible");
+
+        this.overLayRef.reopenOverlay();
+
     };
 
     return mobility_map;

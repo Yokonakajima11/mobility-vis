@@ -30,7 +30,11 @@
             
            
             mmap = new mobility_map("vismap", 55.751849, 12.535186, mdata);
-moverlay = new mobility_overlay("vismap", mdata);
+            moverlay = new mobility_overlay("vismap", mdata);
+            moverlay.setMapRef(mmap);
+            mmap.setOverlayRef(moverlay);
+
+           // addEventListener("overlayClosed", function () { delete moverlay});
            
             $(window).resize(function () {
                 if (mmap)
