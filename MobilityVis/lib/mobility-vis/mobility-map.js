@@ -20,7 +20,8 @@ var mobility_map = (function () {
         this.parentId = divId;                                                                                  
         /// <field name="vis" type="d3.selection()">Main SVG </field>
         if (d3.select("svg").empty())
-            this.vis = d3.select("#" + divId).append("svg:svg");
+            this.vis = d3.select("#" + divId)
+                .append("svg:svg");
         else
             this.vis = d3.select("svg");
         /// <field name="visLayer" type="d3.selection()">Visualisation layer</field>
@@ -120,7 +121,7 @@ var mobility_map = (function () {
             chart.endTime = e.detail.endTime;//chart.data.time[chart.data.time.length - 1].end;
             chart.timelineRef = new mobility_timeline(chart.timelineLayer, chart, chart.data.time[0].start, chart.data.time[chart.data.time.length - 1].end, chart.startTime);           
             chart.map.center({ lat: lat, lon: long });
-
+            chart.gui.blockGui();
             
         });
 
@@ -131,6 +132,11 @@ var mobility_map = (function () {
         var chart = this;
         // Whenever the map moves, update the marker positions.
         this.map.on("move", function () { chart.onMapMove() });
+        this.startTime = this.dataStore.startTime;
+        this.endTime = this.dataStore.endTime;
+
+        this.gui.unblockGui();
+
 
         // Begin
         this.updatePoints(false);
@@ -225,7 +231,7 @@ var mobility_map = (function () {
         marker.selectAll("circle").transition()
             .duration(100)
             .attr("r", function (d) {
-                return chart.radiusScale(d.count)
+                return chart.radiusScale(d.count);
             })
             .style("cursor", (this.animating) ? "default" : "pointer")
             .style("fill", function (d) {
@@ -684,12 +690,21 @@ var mobility_map = (function () {
     };
 
     mobility_map.prototype.reopenOverlay = function () {
+     
+        d3.select("#overlayLayer").style("visibility", "visible");
+        this.gui.reset();
+        this.hideDetails();
+        this.dataStore.resetPoints();
+        this.timelineRef.reset();
+        
+
         d3.select(".vislayer").selectAll(".locationPoint").remove();
         d3.select(".vislayer").selectAll(".connection").remove();
 
-        d3.select("#overlayLayer").style("visibility", "visible");
+
 
         this.overLayRef.reopenOverlay();
+
 
     };
 

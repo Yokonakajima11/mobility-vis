@@ -348,7 +348,6 @@ var mobility_gui = (function () {
             this.reopen = true;
        // this.hideDetailFrame();
         this.closeFilterMenu();
-        this.closeModeMenu();
 
         d3.select("#filterMenu").select("polyline")
             .style("visibility", "hidden");
@@ -433,6 +432,27 @@ var mobility_gui = (function () {
         copGrp.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
     };
 
+    mobility_gui.prototype.reset = function () {
+        var that = this;
+        that.weekData.forEach(function (d, i) {
+            if (d.clicked)
+                that.visRef.updateDayOfWeekFilter(i);
+            d.clicked = false
+        });
+        that.partOfDayData.forEach(function (d, i) {
+            if (d.clicked)
+                that.visRef.updateTimeofDayFilter(i);
+            d.clicked = false
+        });
+
+        d3.selectAll(".weekButton").selectAll("rect").style("fill", null);
+        d3.selectAll(".podButton").selectAll("rect").style("fill", null);
+        
+        this.blockGui();
+        this.closeFilterMenu();
+
+        this.reopen = false;
+    };
 
     return mobility_gui;
 

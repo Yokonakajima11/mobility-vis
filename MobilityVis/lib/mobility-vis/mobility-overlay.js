@@ -15,7 +15,8 @@ var mobility_overlay = (function () {
         this.parentId = divId;
         /// <field name="vis" type="d3.selection()">Main SVG </field>
         if (d3.select("svg").empty())
-            this.vis = d3.select("#" + divId).append("svg:svg");
+            this.vis = d3.select("#" + divId)
+                .append("svg:svg");
         else
             this.vis = d3.select("svg"); 
         /// <field name="visLayer" type="d3.selection()">Visualisation layer</field>
@@ -100,8 +101,8 @@ var mobility_overlay = (function () {
             .attr({
                 x: 970,
                 y: 10,
-                width: document.getElementById(this.parentId).offsetWidth - 10 - 970,
-                height: document.getElementById(this.parentId).offsetHeight - 20,
+                width: 1920 - 10 - 970,
+                height: 980 - 20,
                 id: "infoBg",
                 "class": "tile"        
             });
@@ -714,7 +715,7 @@ var mobility_overlay = (function () {
        // var event = new CustomEvent("overlayClosed", { detail: {} });
         
         var once = false;
-
+        console.log("===========================================");
 
         this.visLayer.select("#exploreBtn")
             .attr("visibility", "hidden");
@@ -777,6 +778,9 @@ var mobility_overlay = (function () {
 
 
                                 if (!once) {
+                                    
+
+
                                     chart.mapRef.begin("#overlayLayer");
                                     once = true;
                                 }
@@ -828,6 +832,8 @@ var mobility_overlay = (function () {
                          .attr("transform", "translate(0,0)")
                         
                     });
+
+
 
         this.graphData = this.dataStore.makeGraph();
         this.updateTree(this.graphData);

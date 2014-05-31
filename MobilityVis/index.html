@@ -37,9 +37,7 @@
            // addEventListener("overlayClosed", function () { delete moverlay});
            
             $(window).resize(function () {
-                if (mmap)
                     mmap.redraw();
-                else
                     moverlay.redraw();
             });
         })

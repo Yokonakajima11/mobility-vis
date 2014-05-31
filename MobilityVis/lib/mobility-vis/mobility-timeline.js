@@ -10,13 +10,13 @@ var mobility_timeline = (function () {
         /// <param name="visRef" type="mobility_map"></param>
         
         var chart = this;
-        this.parent = parentContainer;
+        this.parent = parentContainer.append("g");
         /// <field name="visRef" type="mobility_map"></param>
         this.visRef = visRef;
         this.startTime = start;
         this.endTime = end;
         this.currentStartTime = currentStart;
-        this.currentEndTime = 0;
+        this.currentEndTime = end;
         this.currentTime = 0;
         this.bubble = "0,-7.5 55,-7.5 70,0 55,7.5 0,7.5 0,0 0,-7.5";
         this.playShape = "M 0,0 L0,15 L15,7.5 L0,0";
@@ -42,9 +42,7 @@ var mobility_timeline = (function () {
         this.brush = d3.svg.brush().y(this.yScale)
             .on("brush", function () { that.updateTimeline() })
             .on("brushend", function () { that.finishUpdate() })
-            .extent([this.currentStartTime, this.endTime]);
-        this.currentEndTime = this.endTime;
-        this.currentStartTime = (this.endTime + this.startTime) / 2;
+            .extent([this.currentStartTime, this.currentEndTime]);
 
         this.parent.append("rect")
            .attr("x", 0)
@@ -228,6 +226,7 @@ var mobility_timeline = (function () {
 
 
     };
+
     mobility_timeline.prototype.resumePlaying = function () {
         this.pause = false;
         var that = this;
@@ -275,17 +274,29 @@ var mobility_timeline = (function () {
         }
     };
 
+    mobility_timeline.prototype.reset = function () {
+
+        this.currentStartTime = this.startTime;
+        this.currentEndTime = this.endTime;
+        this.parent.select("g").remove();
+
+        this.drawTimeline();
+    };
+
+
     mobility_timeline.formatDate = function (date) {
 
         var m_names = new Array("Jan", "Feb", "Mar",
-"Apr", "May", "Jun", "Jul", "Aug", "Sep",
-"Oct", "Nov", "Dec");
+                                "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+                                "Oct", "Nov", "Dec");
         var curr_date = date.getDate();
         if (curr_date < 10) curr_date = "0" + curr_date;
         var curr_month = date.getMonth();
         var curr_year = date.getFullYear();
         return (curr_date + " " + m_names[curr_month] + " " + (curr_year % 100));
     };
+
+
    
 
     return mobility_timeline;

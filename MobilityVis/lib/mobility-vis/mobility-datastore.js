@@ -323,6 +323,10 @@ var mobility_datastore = (function () {
         return graph;
     };
 
+    mobility_datastore.prototype.resetPoints = function () {
+
+        this.updatePoints(this.startTime, this.endTime, false);
+    };
 
     return mobility_datastore;
 
