@@ -5,6 +5,16 @@
 /// <reference path="mobility-point.js" />
 /// <reference path="mobility-gui.js" />
 /// <reference path="mobility-datastore.js" />
+///
+/// ======================================================================================================
+/// File: MOBILITY-MAP.js
+/// ======================================================================================================
+/// <summary>
+/// This class is the "exploration mode" map visualization for the mobility visualization.
+/// </summary>
+/// <author>Marta Magiera</author>
+/// ======================================================================================================
+
 
 var mobility_map = (function () {
 
@@ -13,26 +23,35 @@ var mobility_map = (function () {
         /// <param name="divId" type="String">Id of the parent contaier</param>
         /// <param name="lat" type="Number">Starting latitude</param>
         /// <param name="long" type="Number">Starting longitude</param>
+        /// <param name="dataStore" type="mobility_datastore">The reference to the data store</param>
         var chart = this;
 
         /*-----------------------------------------  Layers    ---------------------------------------*/
-        // <field name="vis" type="String">Parent container ID</field>
+        /// <field name="vis" type="String">Parent container ID</field>
         this.parentId = divId;                                                                                  
-        /// <field name="vis" type="d3.selection()">Main SVG </field>
+        /// <field name="vis" type="d3.selection">Main SVG </field>
         if (d3.select("svg").empty())
             this.vis = d3.select("#" + divId)
                 .append("svg:svg");
         else
             this.vis = d3.select("svg");
-        /// <field name="visLayer" type="d3.selection()">Visualisation layer</field>
+        /// <field name="visLayer" type="d3.selection">Visualisation layer</field>
         this.visLayer = null;
-        /// <field name="guiLayer" type="d3.selection()">GUI layer</field>
+        /// <field name="guiLayer" type="d3.selection">GUI layer</field>
         this.guiLayer = null;
-        /// <field type="d3.selection()">Timeline layer </field>
+        /// <field type="d3.selection">Timeline layer </field>
         this.timelineLayer = null;
-        /// <field type="org.polymaps.map()">Map container </field>
+        /// <field type="org.polymaps.map">Map container </field>
         this.map = po.map()                                                                                 
             .container(this.vis.append("g").attr("id", "map-container").node());
+
+        /*---------------------------------------  References    --------------------------------------*/
+        /// <field name="overlayRef" type="mobility_overlay">Reference to data storage</field>
+        this.overlayRef = null;
+        /// <field name="timelineRef" type="mobility_timeline">Reference to data storage</field>
+        this.timelineRef = null;
+        /// <field name="gui" type="mobility_gui">Reference to the GUI layer object</field>
+        this.gui = null;
 
         /*----------------------------------------  Data    ------------------------------------------*/
         /// <field name="data" type="Object">Object containing all data </field>
@@ -46,54 +65,54 @@ var mobility_map = (function () {
             /// <field type="Array">List of all unique connections </field>
             connections: []              
         };
-
-
-        /// <field name="dataStore" type="mobility_datastore">Reference to data storage</param>
-        this.dataStore = dataStore;
-
-        this.overLayRef = null;
+        /// <field name="dataStore" type="mobility_datastore">Reference to data storage</field>
+        this.dataStore = dataStore;        
         /// <field name="dayOfWeekFilter" type="Array">Filter for days of the week. Days in the filter 
         /// (as integers) will not be displayed</field>
         this.dayOfWeekFilter = [];
         /// <field name="timeOfDayFilter" type="Array">Filter for times of day. Periods in the filter 
         /// (as ranges) will not be displayed</field>
-        this.timeOfDayFilter = [{from:0, to:6, label: "dusk", filtered:false},
-                                {from:6, to:12, label: "morning", filtered:false}, 
-                                {from:12, to:18, label: "afternoon", filtered:false}, 
-                                {from:18, to:22, label: "evening", filtered:false}, 
+        this.timeOfDayFilter = [{ from: 0, to: 6, label: "dusk", filtered: false },
+                                { from: 6, to: 12, label: "morning", filtered: false },
+                                { from: 12, to: 18, label: "afternoon", filtered: false },
+                                { from: 18, to: 22, label: "evening", filtered: false },
                                 { from: 22, to: 24, label: "night", filtered: false }];
         
-        /// <field type="Array">List of currently displayed locations </field>
+        /// <field name="displayedPoints" type="Array">List of currently displayed locations </field>
         this.displayedPoints = null;
-        /// <field type="Number">Timestamp of the start of displayed period</field>
+        /// <field name="startTime" type="Number">Timestamp of the start of displayed period</field>
         this.startTime = 0;
-        /// <field type="Number">Timestamp of the end of displayed period</field>
+        /// <field name="endTime" type="Number">Timestamp of the end of displayed period</field>
         this.endTime = 0;
 
         /*--------------------------------------  Scales    ------------------------------------------*/
-        /// <field type="d3.scale">Scale for circle radii </field>
+        /// <field name="radiusScale" type="d3.scale">Scale for circle radii </field>
         this.radiusScale = d3.scale.pow().exponent(0.3).range([4, 20]).domain([1, 100]);
-        /// <field type="d3.scale">Scale for circle colors</field>
+        /// <field name="colorScale" type="d3.scale">Scale for circle colors</field>
         this.colorScale = d3.scale.linear().range(["#e80c7a", "#FFF500"]).domain([0, 12]).clamp(true);
-        /// <field type="d3.scale">Scale for connections stroke</field>
+        /// <field name="connScale" type="d3.scale">Scale for connections stroke</field>
         this.connScale = d3.scale.linear().range([0.35, 5]).domain([0, 20]).clamp(true); 
         //(["#262626", "#B9D40B"] zielony,["#023E73", "#00AAB5"]niebieski   
 
         /*------------------------------------  Map parameters    ------------------------------------*/
-        /// <field type="Object">First reference point to compute scale</field>                                                                              
+        /// <field name="refPoint1" type="Object">First reference point to compute scale</field>                                                                              
         this.refPoint1 = { lat: 55, lon: 56 };
-        /// <field type="Object">Second reference point to compute scale</field>                                                                          
+        /// <field name="refPoint2" type="Object">Second reference point to compute scale</field>                                                                          
         this.refPoint2 = { lat: 56, lon: 56 };
-        /// <field type="Number">Euclidean distance between the reference points</field>                                                                           
+        /// <field name="refDistance" type="Number">Euclidean distance between the reference points</field>                                                                           
         this.refDistance = 0;
-        /// <field type="Number">Current scale - proportion between the reference distance before and after 
+        /// <field name="scale" type="Number">Current scale - proportion between the reference distance before and after 
         /// zoom</field>                                                                            
         this.scale = 1;
 
         /*----------------------------------------- Control ------------------------------------------*/
+        /// <field name="detailView" type="Boolean">The flag indicating whether the detailed view is open</field>                                                                              
         this.detailView = false;
+        /// <field name="detailItem" type="mobility_point">The data point which is displayed in the detailed view</field>                                                                              
         this.detailItem = null;
+        /// <field name="animating" type="Boolean">The flag indicating whether an animation is playing currently</field>                                                                              
         this.animating = false;
+        /// <field name="tickDuration" type="Number">Duration of each tick during time animation</field>                                                                              
         this.tickDuration = 1000;
 
         /*--------------------------------------  Constructor    -------------------------------------*/        
@@ -108,63 +127,50 @@ var mobility_map = (function () {
         this.visLayer.append("g").attr("class", "pointLayer");
         this.guiLayer = d3.select("svg").append("svg:g").attr("class", "gui");
         this.drawGui(chart.guiLayer);
-
         
-        addEventListener("dataReady", function (e) {
-         
-             //Data has been loaded - initialize
-            
-            
-            // Establishing initial time
-            chart.data = dataStore.data; //chart.filterPoints(data);
-            chart.startTime = e.detail.startTime;//(e.detail.startTime + e.detail.endTime) / 2;// ime(chart.data.time[0].start+chart.data.time[chart.data.time.length - 1].end)/2;
-            chart.endTime = e.detail.endTime;//chart.data.time[chart.data.time.length - 1].end;
+        addEventListener("dataReady", function (e) {         
+             //Data has been loaded - initialize 
+            chart.data = dataStore.data; 
+            chart.startTime = e.detail.startTime;
+            chart.endTime = e.detail.endTime;
             chart.timelineRef = new mobility_timeline(chart.timelineLayer, chart, chart.data.time[0].start, chart.data.time[chart.data.time.length - 1].end, chart.startTime);           
             chart.map.center({ lat: lat, lon: long });
-            chart.gui.blockGui();
-            
-        });
-
-        
+            chart.gui.blockGui();            
+        });        
     };
 
     mobility_map.prototype.begin = function (overlayRef) {
+    	/// <summary>
+    	/// Initialize the map visualization when the overlay is closed
+    	/// </summary>
+    	/// <param name="overlayRef" type="d3.selection">The reference to the overlay SVG element</param>
         var chart = this;
         // Whenever the map moves, update the marker positions.
         this.map.on("move", function () { chart.onMapMove() });
         this.startTime = this.dataStore.startTime;
         this.endTime = this.dataStore.endTime;
-
         this.gui.unblockGui();
-
 
         // Begin
         this.updatePoints(false);
         this.visLayer.selectAll("circle")
             .style("visibility", "hidden");
-
-
         setTimeout(function () {
             chart.visLayer.selectAll("circle")
                 .style("visibility", "visible");
             d3.select(overlayRef).style("visibility", "hidden");
         }, 500);
 
-
         this.updateTimeEnd();
-
     };
 
-    /*----------------------------------------------------------------------  Data methods    ---------------------------------------------------------------------*/
+    /*-----------------------------------------  Data methods    --------------------------------------*/
     mobility_map.prototype.updatePoints = function (animatedTick) {
         /// <summary>
         /// Updates the point according to time period
         /// </summary>
         /// <param name="animatedTick">Whether the update is made during movement animation</param>
-
-
-        this.displayedPoints = this.dataStore.updatePoints(this.startTime, this.endTime, animatedTick);
-        
+        this.displayedPoints = this.dataStore.updatePoints(this.startTime, this.endTime, animatedTick);        
 
         this.drawPoints(animatedTick);
     };
@@ -193,8 +199,7 @@ var mobility_map = (function () {
     };
 
   
-    /*--------------------------------------------------------------------  Drawing methods    --------------------------------------------------------------------*/
-
+    /*----------------------------------------  Drawing methods    ------------------------------------*/
     mobility_map.prototype.drawPoints = function (animatedTick) {
     	/// <summary>
     	/// Draw the points onto the visualization layer
@@ -228,6 +233,7 @@ var mobility_map = (function () {
             .on("mouseout", function () { if (!chart.detailView) return chart.hideHoverDetails(); })
             .on("click", function (d) { if (!chart.animating) return chart.showDetails(d); });
 
+        // Animate all the circles
         marker.selectAll("circle").transition()
             .duration(100)
             .attr("r", function (d) {
@@ -430,12 +436,12 @@ var mobility_map = (function () {
         this.timelineLayer.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 40) + ",10)");
     };
 
-    /*--------------------------------------------------------------------  Details methods    --------------------------------------------------------------------*/
+    /*-----------------------------------------  Details methods    -----------------------------------*/
     mobility_map.prototype.hoverDetails = function (d) {
         /// <summary>
         /// Displays details for given location
         /// </summary>
-        /// <param name="d">The given location</param>
+        /// <param name="d" type="mobility-point">The given location</param>
         var chart = this;
         this.visLayer.select(".connectionLayer").selectAll(".connection")
             .transition()
@@ -472,7 +478,7 @@ var mobility_map = (function () {
         /// <summary>
         /// Displays details for given location
         /// </summary>
-        /// <param name="d">The given location</param>
+        /// <param name="d" type="mobility-point">The given location</param>
         var chart = this;
         this.hideDetails();
         this.hoverDetails(d);
@@ -550,7 +556,7 @@ var mobility_map = (function () {
 
     };
 
-    /*--------------------------------------------------------------------  Utility methods    --------------------------------------------------------------------*/
+    /*----------------------------------------  Utility methods    ------------------------------------*/
     mobility_map.prototype.updateTime = function (start, end) {
     	/// <summary>
     	/// Change displayed time period. Event handler for timeline's brush event
@@ -567,18 +573,9 @@ var mobility_map = (function () {
     	/// <summary>
         /// Change displayed time period. Event handler for timeline's brushend event
     	/// </summary>
-        
-        //for (var i = 0; i < this.data.location.length; i++) {
-        //    if (this.data.location[i].count == 0) break;
-        //    this.data.location[i].bucketData();
-
-        //    this.data.location[i].filtered = this.pointInFilter(this.data.location[i]);
-        //}
-
         this.dataStore.bucketData(function (d) { return chart.pointInFilter(d) });
         this.drawPoints(false);
         this.updateConnections(false, 1500);
-
 
         if (this.detailView) {
             this.gui.update(this.startTime, this.endTime);
@@ -632,7 +629,7 @@ var mobility_map = (function () {
     	/// <summary>
     	/// Change the current day of week filtering
     	/// </summary>
-    	/// <param name="filter">Day of week to highlight</param>
+    	/// <param name="filter" type="Number">Day of week to highlight</param>
         if (this.dayOfWeekFilter.indexOf(filter) != -1)
             this.dayOfWeekFilter.splice(this.dayOfWeekFilter.indexOf(filter), 1);
         else
@@ -646,7 +643,7 @@ var mobility_map = (function () {
         /// <summary>
         /// Change the current time of day filtering
         /// </summary>
-        /// <param name="filter">Period index to highlight</param>
+        /// <param name="filter" type="Number">Period index to highlight</param>
         this.timeOfDayFilter[filter].filtered = !this.timeOfDayFilter[filter].filtered;
 
 
@@ -665,6 +662,9 @@ var mobility_map = (function () {
     };
 
     mobility_map.prototype.startAnimating = function () {
+    	/// <summary>
+    	/// Called when time animation is starting to block GUI functionality, etc.
+    	/// </summary>
         this.animating = true;
         this.hideDetails();
 
@@ -680,32 +680,36 @@ var mobility_map = (function () {
     };
 
     mobility_map.prototype.stopAnimating = function () {
-        this.animating = false;       
-
+    	/// <summary>
+    	/// Called when time animation is stopped to unlock interactions
+    	/// </summary>
+        this.animating = false;
         this.gui.unblockGui();
     };
 
     mobility_map.prototype.setOverlayRef = function (ref) {
-        this.overLayRef = ref;
+    	/// <summary>
+    	/// Set the overlay layer reference
+    	/// </summary>
+    	/// <param name="ref" type="mobility-overlay"></param>
+        this.overlayRef = ref;
     };
 
     mobility_map.prototype.reopenOverlay = function () {
+    	/// <summary>
+    	/// Go back to the simple mode by reopening the overlay
+    	/// </summary>
      
         d3.select("#overlayLayer").style("visibility", "visible");
         this.gui.reset();
         this.hideDetails();
         this.dataStore.resetPoints();
-        this.timelineRef.reset();
-        
+        this.timelineRef.reset();        
 
         d3.select(".vislayer").selectAll(".locationPoint").remove();
         d3.select(".vislayer").selectAll(".connection").remove();
 
-
-
-        this.overLayRef.reopenOverlay();
-
-
+        this.overlayRef.reopenOverlay();
     };
 
     return mobility_map;

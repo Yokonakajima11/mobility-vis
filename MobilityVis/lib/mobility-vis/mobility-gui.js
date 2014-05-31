@@ -2,7 +2,17 @@
 /// <reference path="../d3.v3/d3.v3.js" />
 /// <reference path="../clusterfck/clusterfck-0.1.js" />
 /// <reference path="../jquery/jquery.min.js" />
-/// <reference path="mobility-tooltip.js" />
+/// <reference path="mobility-detailview.js" />
+///
+/// ======================================================================================================
+/// File: MOBILITY-GUI.js
+/// ======================================================================================================
+/// <summary>
+/// This class represents the GUI overlay over the mobility map visualization.
+/// </summary>
+/// <author>Marta Magiera</author>
+/// ======================================================================================================
+
 
 var mobility_gui = (function () {
 
@@ -10,22 +20,25 @@ var mobility_gui = (function () {
         /// <summary>
         /// Constructor for the GUI layer
         /// </summary>
-        /// <param name="parenContainer">Container (SVG) holding the GUI</param>
+        /// <param name="parenContainer" type="d3.selection">Container (SVG) holding the GUI</param>
         /// <param name="visRef" type="mobility_map">Reference to the visualization</param>
 
         /*-------------------------------------  References    ---------------------------------------*/
-        // <field name="parent" type="d3.selection()">Parent container selection</field>
+        // <field name="parent" type="d3.selection(">Parent container selection</field>
         this.parent = parenContainer;
         /// <field name="visRef" type="mobility_map">Reference to the main visualization</param>
         this.visRef = visRef;
         // <field name="vis" type="String">Parent container ID of the visualization</field>
         this.parentId = visRef.parentId;
-        // <field name="currentTooltip" type="mobility_tooltip">Currently opened details frame</field>
-        this.currentTooltip = null;
+        // <field name="currentDetailView" type="mobility_detailview">Currently opened details frame</field>
+        this.currentDetailView = null;
 
         /*---------------------------------------  Control    -----------------------------------------*/
+        // <field name="menuExpanded" type="Object">Flags indicating the state of menus being open</field>
         this.menuExpanded = { filters: false };
+        // <field name="reopen" type="Boolean">Whether a menu should be reopened after GUI block</field>
         this.reopen = false;
+        // <field name="blocked" type="Boolean">Flag indicating whether GUI is locked</field>
         this.blocked = false;
 
         /*----------------------------------------  Data    ------------------------------------------*/
@@ -55,8 +68,8 @@ var mobility_gui = (function () {
         this.drawModeMenu();
 
     };
-    /*---------------------------------------------------------------------  Scale methods    ---------------------------------------------------------------------*/
-
+    
+    /*-----------------------------------------  Scale methods    -------------------------------------*/
     mobility_gui.prototype.drawScale = function () {
     	/// <summary>
     	/// Draw the color scale
@@ -65,8 +78,7 @@ var mobility_gui = (function () {
         var scaleGrp = this.parent.append("g")
             .attr("class", "scale")
             .attr("transform", "translate(10," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
-            //.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
-
+            
         scaleGrp.append("rect")
             .attr("x", 0)
             .attr("y", 0)
@@ -111,7 +123,7 @@ var mobility_gui = (function () {
     	/// <summary>
     	/// Draw the tick on the color scale
     	/// </summary>
-    	/// <param name="value">The value on the scale</param>
+    	/// <param name="value" type="Number>The value on the scale</param>
         var that = this;
         this.parent.select(".scale").append("polyline")
             .attr("points", "0,5 5,15 10,5")
@@ -125,7 +137,6 @@ var mobility_gui = (function () {
         .attr("y", 35)
         .attr("class", "colorScaleTick scaleText")
         .text(Math.round(value * 100) / 100 + " hours on average per visit");
-
     };
     
     mobility_gui.prototype.removeScaleTick = function () {
@@ -135,7 +146,11 @@ var mobility_gui = (function () {
         this.parent.selectAll(".colorScaleTick").remove();
     };
 
+    /*--------------------------------------  Filter Menu methods    ----------------------------------*/
     mobility_gui.prototype.drawFilterMenu = function () {
+    	/// <summary>
+    	/// Draw the Filters menu
+    	/// </summary>
         var that = this;
         var filterMenu = this.parent.append("g")
             .attr("id", "filterMenu");
@@ -145,10 +160,9 @@ var mobility_gui = (function () {
            .attr("y", 0)
            .attr("width", 220)
            .attr("height", 150)
-           .attr("class", "tile");
+           .attr("class", "tile");        
 
-        
-
+        // Draw the day of week filter buttons
         var weekButtons = filterMenu.selectAll(".weekButton").data(this.weekData).enter()
             .append("g")
             .attr("class", "weekButton button")
@@ -179,6 +193,7 @@ var mobility_gui = (function () {
             .attr("y", function (d, i) { return (i + 1) * 20 - 2; })
             .text(function (d) { return d.label });
 
+        //Draw the part of day filter buttons
         var PoDButtons = filterMenu.selectAll(".podButton").data(this.partOfDayData).enter()
             .append("g")
             .attr("class", "podButton button")
@@ -209,6 +224,7 @@ var mobility_gui = (function () {
             .attr("y", function (d, i) { return (i + 1) * 20 - 2; })
             .text(function (d) { return d.label });
 
+        // Draw the reset button
         var resetButtonGrp = filterMenu.append("g")
             .attr("class", "button")
             .on("click", function () {
@@ -245,6 +261,7 @@ var mobility_gui = (function () {
             .attr("y", 140 - 2)
             .text("Reset");
 
+        // Draw the open/close border button
         var openGrp = filterMenu.append("g")
             .attr("class", "button")
             .on("click", function () {
@@ -289,6 +306,9 @@ var mobility_gui = (function () {
     };
 
     mobility_gui.prototype.drawModeMenu = function () {
+    	/// <summary>
+    	/// Draw the mode switch button
+    	/// </summary>
         var that = this;
 
         var overlayButtonGrp = this.parent.append("g")
@@ -305,7 +325,6 @@ var mobility_gui = (function () {
                 d3.select(this).select("text").style("fill", null);
             });
 
-
         overlayButtonGrp.append("rect")
            .attr({
                x: 0,
@@ -319,10 +338,12 @@ var mobility_gui = (function () {
            .attr("x", 30)
            .attr("y", 10 + 12)
            .text("Simple mode");
-
     };
 
     mobility_gui.prototype.openFilterMenu = function () {
+    	/// <summary>
+    	/// Open the filters menu
+    	/// </summary>
         this.menuExpanded.filters = true;
         d3.select("#filterMenu").select("polyline")
             .attr("transform", "translate(210,130) rotate(180)");
@@ -333,6 +354,9 @@ var mobility_gui = (function () {
     };
 
     mobility_gui.prototype.closeFilterMenu = function () {
+    	/// <summary>
+    	/// Close the filters menu
+    	/// </summary>
         this.menuExpanded.filters = false;
         d3.select("#filterMenu").select("polyline")
             .attr("transform", "translate(210,130) rotate(0)");
@@ -342,43 +366,12 @@ var mobility_gui = (function () {
             .attr("transform", "translate(-200, 60)");
     };
 
-    mobility_gui.prototype.blockGui = function () {
-        this.blocked = true;
-        if (this.menuExpanded.filters)
-            this.reopen = true;
-       // this.hideDetailFrame();
-        this.closeFilterMenu();
-
-        d3.select("#filterMenu").select("polyline")
-            .style("visibility", "hidden");
-
-    };
-
-    mobility_gui.prototype.unblockGui = function () {
-        this.blocked = false;
-        if (this.reopen)
-            this.openFilterMenu();
-        d3.select("#filterMenu").select("polyline")
-          .style("visibility", "visible");
-
-    };
-
-    mobility_gui.prototype.update = function (start, end) {
-
-        this.parent.selectAll(".scale")
-            .attr("transform", "translate(20," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
-        //.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 330) + "," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
-
-        this.parent.selectAll(".copyrightBox")
-            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
-
-        if (this.currentTooltip != null)
-            this.currentTooltip.update(start, end);
-    };
-
-    
-
+    /*--------------------------------------  Detail View methods    ----------------------------------*/  
     mobility_gui.prototype.showDetailFrame = function (data) {
+    	/// <summary>
+    	/// Display the detailed view frame
+    	/// </summary>
+    	/// <param name="data" type="mobility_point">The data point for which to display details</param>
         var that = this;
         var grp = this.parent.append("g")
             .attr("class", "detailFrame")
@@ -388,13 +381,16 @@ var mobility_gui = (function () {
         grp.transition()
             .duration(500)
             .ease("linear")
-        .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200) + ", 10)");
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200) + ", 10)");
         var closeFun = function () { that.visRef.hideDetails() };
-        this.currentTooltip = new mobility_tooltip(grp, data, document.getElementById(this.parentId).offsetWidth / 2 - 110 + 200,
+        this.currentDetailView = new mobility_detailview(grp, data, document.getElementById(this.parentId).offsetWidth / 2 - 110 + 200,
             550, this.visRef.startTime, this.visRef.endTime, closeFun);
     };
 
     mobility_gui.prototype.hideDetailFrame = function () {
+    	/// <summary>
+    	/// Hide the detailed view frame
+    	/// </summary>
         var that = this;
         this.parent.select(".detailFrame")
             .transition()
@@ -403,11 +399,10 @@ var mobility_gui = (function () {
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200) + ", " + document.getElementById(this.parentId).offsetHeight + "0)")
             .remove();
         this.unblockGui();
-        delete this.currentTooltip;
-        //this.currentTooltip = null;
-
+        delete this.currentDetailView;
     };
 
+    /*---------------------------------------  Other View methods    ----------------------------------*/
     mobility_gui.prototype.drawCopyright = function () {
         /// <summary>
         /// Draw the copyright box
@@ -432,7 +427,53 @@ var mobility_gui = (function () {
         copGrp.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
     };
 
+    /*----------------------------------------  Utility methods    ------------------------------------*/
+    mobility_gui.prototype.blockGui = function () {
+        /// <summary>
+        /// Block the GUI, preventing user interactions
+        /// </summary>
+        this.blocked = true;
+        if (this.menuExpanded.filters)
+            this.reopen = true;
+        this.closeFilterMenu();
+
+        d3.select("#filterMenu").select("polyline")
+            .style("visibility", "hidden");
+
+    };
+
+    mobility_gui.prototype.unblockGui = function () {
+        /// <summary>
+        /// Unblock the GUI, allowing for user interaction
+        /// </summary>
+        this.blocked = false;
+        if (this.reopen)
+            this.openFilterMenu();
+        d3.select("#filterMenu").select("polyline")
+          .style("visibility", "visible");
+
+    };
+
+    mobility_gui.prototype.update = function (start, end) {
+        /// <summary>
+        /// Update the GUI with new start and end times. This is used to update the detail view
+        /// </summary>
+        /// <param name="start" type="Number">Start of the new time period</param>
+        /// <param name="end" type="Number">End of the new time period</param>
+        this.parent.selectAll(".scale")
+            .attr("transform", "translate(20," + (document.getElementById(this.parentId).offsetHeight - 50) + ")");
+
+        this.parent.selectAll(".copyrightBox")
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
+
+        if (this.currentDetailView != null)
+            this.currentDetailView.update(start, end);
+    };
+
     mobility_gui.prototype.reset = function () {
+    	/// <summary>
+    	/// Reset the GUI overlay
+    	/// </summary>
         var that = this;
         that.weekData.forEach(function (d, i) {
             if (d.clicked)

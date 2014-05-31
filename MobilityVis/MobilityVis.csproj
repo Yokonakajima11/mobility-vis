@@ -54,11 +54,10 @@
     <Content Include="lib\mobility-vis\mobility-datastore.js" />
     <Content Include="lib\mobility-vis\mobility-overlay.js" />
     <Content Include="lib\mobility-vis\mobility-point.js" />
-    <Content Include="lib\mobility-vis\mobility-tooltip.js" />
+    <Content Include="lib\mobility-vis\mobility-detailview.js" />
     <Content Include="lib\mobility-vis\mobility-gui.js" />
     <Content Include="lib\mobility-vis\mobility-timeline.js" />
     <Content Include="lib\mobility-vis\mobility-map.js" />
-    <Content Include="lib\mobility-vis\mobility-vis.js" />
     <Content Include="lib\polymaps\examples\bing\map.html" />
     <Content Include="lib\polymaps\examples\bing\map.js" />
     <Content Include="lib\polymaps\examples\bounds\bounds.html" />

@@ -5,23 +5,37 @@
 /// <reference path="mobility-point.js" />
 /// <reference path="mobility-gui.js" />
 /// <reference path="mobility-datastore.js" />
+///
+/// ======================================================================================================
+/// File: MOBILITY-OVERLAY.js
+/// ======================================================================================================
+/// <summary>
+/// This class is the "simple mode" visualization for the mobility visualization. It operates the 
+/// overlay.
+/// </summary>
+/// <author>Marta Magiera</author>
+/// ======================================================================================================
 
 var mobility_overlay = (function () {
 
     function mobility_overlay(divId, dataStore) {
+    	/// <summary>
+    	/// The constructor for the mobility_overlay object.
+        /// </summary>
+        /// <param name="divId" type="String">Id of the parent contaier</param>
+        /// <param name="dataStore" type="mobility_datastore">The reference to the data store</param>
         var chart = this;
 
-        // <field name="vis" type="String">Parent container ID</field>
+        // <field name="parentId" type="String">Parent container ID</field>
         this.parentId = divId;
-        /// <field name="vis" type="d3.selection()">Main SVG </field>
+        /// <field name="vis" type="d3.selection">Main SVG </field>
         if (d3.select("svg").empty())
             this.vis = d3.select("#" + divId)
                 .append("svg:svg");
         else
-            this.vis = d3.select("svg"); 
-        /// <field name="visLayer" type="d3.selection()">Visualisation layer</field>
-        this.visLayer = null;
+            this.vis = d3.select("svg");        
 
+        /*----------------------------------------  Data    ------------------------------------------*/
         /// <field name="data" type="Object">Object containing all data </field>
         this.data = {
             /// <field type="Array" elementType="mobility_point">List of all unique locations </field>
@@ -33,29 +47,43 @@ var mobility_overlay = (function () {
             /// <field type="Array">List of all unique connections </field>
             connections: []              
         };
+        /// <field name="currentCenterId" type="Number">Id of the data point in the middle of the tree</field>
+        this.currentCenterId;
+        /// <field name="tree" type="d3.layout.tree">The tree layout</field>
+        this.tree = null;
+        /// <field name=graphData" type="Object">The data for the tree graph</field>
+        this.graphData = null;
 
-        /// <field name="dataStore" type="mobility_datastore">Reference to data storage</param>
+        /*---------------------------------------  References    --------------------------------------*/
+        /// <field name="dataStore" type="mobility_datastore">Reference to data storage</field>
         this.dataStore = dataStore;
-
+        /// <field name="mapRef" type="mobility_map">Reference to big map visualization</field>
         this.mapRef = null;
 
-        this.currentCenterId;
-
+        /*--------------------------------------  Layout    ------------------------------------------*/
+        /// <field name="calendarPos" type="Number">Current translation of the calendar</field>
         this.calendarPos = 0;
+        /// <field name="colorScale" type="d3.scale">The color scale for the top 5 locations</field>
         this.colorScale = d3.scale.ordinal().range(["#E80C7A", "#9AD954", "#8047C3", "#FF9A54", "#FFE73D"]);
-        this.extraColor = "cyan";//"#0AF0FF";
-
+        /// <field name="extraColor" type="String">The extra color of the selected point</field>
+        this.extraColor = "cyan";
+        /// <field name="radiusScale" type="d3.scale">The radius scale for the tree circles</field>
         this.radiusScale = d3.scale.pow().exponent(0.3).range([3, 10]);
-        this.tree = null;
+        
+        /// <field name="diagonal" type="d3.svg.diagonal">The diagonal for the tree layout</field>
         this.diagonal = d3.svg.diagonal.radial()
             .projection(function (d) {
                 return [d.y, d.x / 180 * Math.PI];
             });
 
+        /// <field name="visLayer" type="d3.selection">Visualisation layer</field>
+        this.visLayer = null;
+        /// <field name="infoLayer" type="d3.selection">The info layer, containg the box with calendar and sparklines</field>
+        this.infoLayer = null;
 
-        
-
+        /*--------------------------------------  Constructor    -------------------------------------*/
         this.visLayer = this.vis.append("g").attr("id", "overlayLayer");
+        // Draw the background
         this.visLayer.append("rect")
                     .attr({
                         x: 0,
@@ -63,18 +91,13 @@ var mobility_overlay = (function () {
                         width: document.getElementById(this.parentId).offsetWidth,
                         height: document.getElementById(this.parentId).offsetHeight,
                         id: "background",
-                
-
                     }).style("fill","#C9C9C9");
 
         this.infoLayer = this.visLayer.append("g").attr("id", "infoLayer");
 
         addEventListener("dataReady", function (e) {
             //Data has been loaded - initialize
-
-
-            // Establishing initial time
-            chart.data = dataStore.data; //chart.filterPoints(data);
+            chart.data = dataStore.data; 
             chart.graphData = chart.dataStore.makeGraph();
             chart.dataStore.bucketData(function (d) { return true });
 
@@ -90,13 +113,15 @@ var mobility_overlay = (function () {
 
             chart.drawAll();
         });
-
-
     };
 
     
     mobility_overlay.prototype.drawAll = function () {
+    	/// <summary>
+    	/// Draw the whole overlay
+    	/// </summary>
         var chart = this;
+        //Draw the box on the right
         this.infoLayer.append("rect")
             .attr({
                 x: 970,
@@ -107,6 +132,7 @@ var mobility_overlay = (function () {
                 "class": "tile"        
             });
 
+        // Draw the button that closes the overlay
         var closeButtonGrp = this.visLayer.append("g")
             .attr("transform", "translate(10,10)")
             .attr("id", "exploreBtn")
@@ -138,12 +164,14 @@ var mobility_overlay = (function () {
 
         this.drawTree();
         this.drawCalendar();
-        this.drawInfo();
-
-       
+        this.drawInfo();       
     };
 
+    /*-------------------------------------------  Tree methods    ------------------------------------*/
     mobility_overlay.prototype.drawTree = function () {
+    	/// <summary>
+    	/// Draw the tree graph.
+    	/// </summary>
         var chart = this;
         var diameter = 1000;
 
@@ -201,6 +229,10 @@ var mobility_overlay = (function () {
     };
 
     mobility_overlay.prototype.updateTree = function (aNode) {
+    	/// <summary>
+    	/// Update the tree graph changing the node in the middle.
+    	/// </summary>
+    	/// <param name="aNode" type="Object">The tree node containing the new middle node</param>
         this.graphData = this.dataStore.makeGraph(aNode.point);
         this.dataStore.bucketData(function (d) { return true });
         this.currentCenterId = aNode.point.id;
@@ -259,7 +291,11 @@ var mobility_overlay = (function () {
         this.addToInfo(aNode);
     };
 
+    /*-----------------------------------------  Calendar methods    ----------------------------------*/
     mobility_overlay.prototype.drawCalendar = function () {
+    	/// <summary>
+    	/// Draw the calendar visualization.
+    	/// </summary>
         var that = this;
         var DoW = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         var arrowShape = "M -7.5,0 L0,15 L7.5,0 L0,0";
@@ -270,9 +306,11 @@ var mobility_overlay = (function () {
         var endWeek = (new Date(this.dataStore.endTime)).getWeek();
         var endMonth = (new Date(this.dataStore.endTime)).getMonth();
 
+        // The last days of the year could be part of week 1 of next year
         if (endMonth == 11 && endWeek == 1)
             endWeek = 53;
 
+        // Minimum and maximum vertical translation of the calendar - for scrolling
         var endPos = 370 - (((endYear - 1) - startYear + 1) * 52 * 15 + (endWeek + 2) * 15) + 405;
         var startPos = 370 - startWeek * 15;
 
@@ -284,6 +322,7 @@ var mobility_overlay = (function () {
                 transform: "translate(1040, -400)"
             })
 
+        // Establish the clip mask
         var clipMask = bigGrp.append("defs").append("clipPath")
             .attr("id", "calClip")
             .append("rect")
@@ -381,6 +420,7 @@ var mobility_overlay = (function () {
             })
             .text(function (d) { return d });
 
+        // The extra things on the calendar - week labels and lines
         var extraGrp = calGrp.append("g").attr("id", "extra");
 
         extraGrp.selectAll(".weekLabel").data(d3.time.mondays(this.dataStore.startTime - 1000 * 60 * 60 * 24 * 7,
@@ -412,6 +452,7 @@ var mobility_overlay = (function () {
             .style("stroke", "white")
             .style("stroke-width", "2px");
             
+        // Buttons to scroll the calendar, if mousewheel won't work
         var buttons = [
             {
                 rotate: 180,
@@ -466,10 +507,13 @@ var mobility_overlay = (function () {
     };
 
     mobility_overlay.prototype.addToCalendar = function (aNode) {
-
+    	/// <summary>
+    	/// Add the extra clicked location onto the calendar.
+    	/// </summary>
+    	/// <param name="aNode" type="Object">The tree node to add to the calendar visualization</param>
         var calGrp = this.visLayer.select("#calGrp").select("#points");
         calGrp.selectAll(".selectedHourTick").remove();
-
+        // If the point is already on the calendar (top 5) do nothing
         for (var i = 0; i < 5 && i < this.data.location.length; i++) {
             if (this.currentCenterId == this.data.location[i].id)
                 return;
@@ -516,7 +560,11 @@ var mobility_overlay = (function () {
 
     };
 
+    /*------------------------------------------  Toplist methods    ----------------------------------*/
     mobility_overlay.prototype.drawInfo = function () {
+    	/// <summary>
+    	/// Draw the Top 5 list and sparklines
+    	/// </summary>
         var chart = this;
 
         var infoGrp = this.infoLayer.append("g").attr("class", "info");
@@ -611,8 +659,13 @@ var mobility_overlay = (function () {
     };
 
     mobility_overlay.prototype.addToInfo = function (aNode) {
+        /// <summary>
+        /// Add the extra clicked location to the top locations with a sparkline.
+        /// </summary>
+        /// <param name="aNode" type="Object">The tree node to add to the top section</param>
         this.visLayer.select("#addedInfo").remove();
 
+        // If the point is already on the calendar (top 5) do nothing
         for (var i = 0; i < 5 && i < this.data.location.length; i++) {
             if (this.currentCenterId == this.data.location[i].id)
                 return;
@@ -648,7 +701,7 @@ var mobility_overlay = (function () {
             .attr("transform", "translate(0," + (5 * 84 + 30) + ")")
             .attr("id", "addedInfo");
 
-        thisGroup.append("text")//.attr("class", "darkText")
+        thisGroup.append("text")
             .attr({
                 x: 34,
                 y: 20
@@ -697,7 +750,11 @@ var mobility_overlay = (function () {
            .style("stroke-width", "0.5px");
     };
 
+    /*----------------------------------------  Utility methods    ------------------------------------*/
     mobility_overlay.prototype.redraw = function () {
+    	/// <summary>
+    	/// Redraw on resize
+    	/// </summary>
         d3.select("#background")
             .attr({
                 width: document.getElementById(this.parentId).offsetWidth,
@@ -706,24 +763,29 @@ var mobility_overlay = (function () {
     };
 
     mobility_overlay.prototype.setMapRef = function (ref) {
+    	/// <summary>
+    	/// Set the map visualization reference.
+    	/// </summary>
+    	/// <param name="ref" type="mobility_map">The map visualization reference</param>
         this.mapRef = ref;
-
     };
 
     mobility_overlay.prototype.closeOverlay = function () {
-        var chart = this;
-       // var event = new CustomEvent("overlayClosed", { detail: {} });
-        
+    	/// <summary>
+    	/// Close the overlay and move to the map visualization.
+    	/// </summary>
+        var chart = this;        
         var once = false;
-        console.log("===========================================");
 
         this.visLayer.select("#exploreBtn")
             .attr("visibility", "hidden");
 
+        // First move the info box away
         this.visLayer.select("#infoLayer")
             .transition()
             .attr("transform", "translate(1900)")
-            .each("end", function() {
+            .each("end", function () {
+                // Then get rid of the background, links and node labels
                 chart.visLayer.selectAll("#background")
                     .transition()
                     .duration(1000)
@@ -743,23 +805,19 @@ var mobility_overlay = (function () {
 
                 chart.visLayer.selectAll(".node circle")
                     .on("click", null);
-
-
+                
+                // Move the nodes onto the appropriate map locations
                 chart.visLayer.selectAll(".node")
                     .transition()
                     .duration(2000)
                     .attr("transform", function (d) {
-
-
                         var p = chart.mapRef.map.locationPoint({ lon: d.point.lon, lat: d.point.lat });
                         return "translate(" + p.x + "," + p.y + ")";
-
-
                     })                   
 
                     .each("end", function () {
+                        // Make the nodes meld with the points on the map itself
                         var node = this;
-
                         d3.select(this).select("circle")
                             .transition()
                             .duration(500)
@@ -775,22 +833,19 @@ var mobility_overlay = (function () {
                             .style("stroke-width", 2)
                             .style("opacity", 0.9)
                             .each("end", function () {
-
-
                                 if (!once) {
-                                    
-
-
                                     chart.mapRef.begin("#overlayLayer");
                                     once = true;
                                 }
-
                             });
                     });
             })
     };
 
     mobility_overlay.prototype.reopenOverlay = function () {
+    	/// <summary>
+    	/// Re-open the overlay with the simple view, covering the map.
+    	/// </summary>
         var diameter = 1000;
         var chart = this;
 
@@ -829,16 +884,11 @@ var mobility_overlay = (function () {
                     .each("end", function() {
                         chart.visLayer.select("#infoLayer")
                          .transition()
-                         .attr("transform", "translate(0,0)")
-                        
+                         .attr("transform", "translate(0,0)")                        
                     });
-
-
 
         this.graphData = this.dataStore.makeGraph();
         this.updateTree(this.graphData);
-
-
     };
 
     return mobility_overlay;
@@ -848,6 +898,10 @@ var mobility_overlay = (function () {
 
 // From http://weeknumber.net/how-to/javascript
 Date.prototype.getWeek = function () {
+	/// <summary>
+	/// Get the week number for a date
+	/// </summary>
+	/// <returns type="Number">The week number</returns>
     var date = new Date(this.getTime()); date.setHours(0, 0, 0, 0);
 
     // Thursday in current week decides the year. 

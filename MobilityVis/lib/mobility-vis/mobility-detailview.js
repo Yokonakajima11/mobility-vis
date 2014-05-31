@@ -3,45 +3,83 @@
 /// <reference path="../clusterfck/clusterfck-0.1.js" />
 /// <reference path="../jquery/jquery.min.js" />
 /// <reference path="mobility-point.js" />
+/// 
+/// ======================================================================================================
+/// File: MOBILITY-DETAILVIEW.js
+/// ======================================================================================================
+/// <summary>
+/// This class is represents the detail view of a single data point. 
+/// </summary>
+/// <author>Marta Magiera</author>
+/// ======================================================================================================
 
-var mobility_tooltip = (function () {
 
-    function mobility_tooltip(parentContainer, data, width, height, start, end, closeFun) {
+var mobility_detailview = (function () {
 
+    function mobility_detailview(parentContainer, data, width, height, start, end, closeFun) {
+    	/// <summary>
+    	/// The constructor for the mobility_detailview object
+    	/// </summary>
+    	/// <param name="parentContainer" type="d3.selection">The selection of the parent container</param>
+    	/// <param name="data" type="mobility_point">The data point to visualize in the detail view</param>
+    	/// <param name="width" type="Number">Width of the detail view</param>
+        /// <param name="height" type="Number">Height of the detail view</param>
+        /// <param name="start" type="Number">Timestamp of the start of the period to visualize</param>
+        /// <param name="end" type="Number">Timestamp of the end of the period to visualize</param>
+    	/// <param name="closeFun" type="Object">Function that closes the detail view</param>
+
+        /// <field name="parent" type="d3.selection">The selection of the parent SVG container</field>
         this.parent = parentContainer;
-        this.radialChart = "#dayHourRadial";
-        /// <field name="data" type="mobility_point">The data point for the tooltip</field>
-        this.data = data;
+        /// <field name="width" type="Number">Width of the detail view</field>
+        this.width = width;
+        /// <field name="height" type="Number">Height of the detail view</field>
+        this.height = height;
+        /// <field name="closeFun" type="Object">The reference to the function that will close the detail view</field>
         this.closeFun = closeFun;
 
-        this.width = width;
-        this.height = height;
-
-        this.startRadius = 25;
-        this.midRadius = 15;
-
+        /*----------------------------------------  Data    ------------------------------------------*/
+        /// <field name="data" type="mobility_point">The data point for the tooltip</field>
+        this.data = data;
+        /// <field name="startTime" type="Number">Timestamp of the start of the period to visualize</field>
         this.startTime = start;
-        this.endTime = end;
+        /// <field name="endTime" type="Number">Timestamp of the end of the period to visualize</field>
+        this.endTime = end;        
 
+        /*---------------------------------  Sub-Visualizations    -----------------------------------*/        
+        /// <field name="radialChart" type="String">Id of the radial chart container SVG group</field>
+        this.radialChart = "#dayHourRadial";
+        /// <field name="startRadius" type="Number">The inner radius of the radial chart visualization</field>
+        this.startRadius = 25;
+        /// <field name="midRadius" type="Number">The mid radius of each circle in the radial chart visualization</field>
+        this.midRadius = 15;
+        /// <field name="timesOfDay" type="Array">The data for various times of day</field>
+        this.timesOfDay = [{ from: 0, to: 6, label: "Dusk" },
+                               { from: 6, to: 12, label: "Morning" },
+                               { from: 12, to: 18, label: "Afternoon" },
+                               { from: 18, to: 22, label: "Evening" },
+                               { from: 22, to: 24, label: "Night" }];
+        /// <field name="radialColorScale" type="d3.scale">The scale for the colors on the radial chart</field>
         this.radialColorScale = d3.scale.linear().range(["#ffffff", "#e80c7a"]).clamp(true);
 
-        this.timesOfDay = [{ from: 0, to: 6, label: "Dusk"},
-                               { from: 6, to: 12, label: "Morning"},
-                               { from: 12, to: 18, label: "Afternoon"},
-                               { from: 18, to: 22, label: "Evening"},
-                               { from: 22, to: 24, label: "Night" }];
-
+        /// <field name="barChart" type="Object">The information for the bar chart</field>
         this.barChart = {
+            /// <field name="x" type="d3.scale">The x scale for the bar chart</field>
             x: null,
+            /// <field name="y" type="d3.scale">The y scale for the bar chart</field>
             y: null,
+            /// <field name="xAxis" type="d3.svg.axis">The x axis for the bar chart</field>
             xAxis: null,
+            /// <field name="yAxis" type="d3.svg.axis">The y axis for the bar chart</field>
             yAxis: null,
+            /// <field name="width" type="Number">The width of the bar chart/field>
             width: 550,
+            /// <field name="height" type="Number">The height of the bar chart</field>
             height: 300,
+            /// <field name="grp" type="d3.selection">The selection containg the bar chart</field>
             grp: null
         };
 
-
+        /*--------------------------------------  Constructor    -------------------------------------*/
         this.update();
         this.draw();
         this.drawInfo();
@@ -50,7 +88,11 @@ var mobility_tooltip = (function () {
 
     };
 
-    mobility_tooltip.prototype.draw = function () {
+    /*----------------------------------------  Drawing methods    ------------------------------------*/
+    mobility_detailview.prototype.draw = function () {
+    	/// <summary>
+    	/// Draw the detailed view.
+    	/// </summary>
         var that = this;
 
         this.parent.append("rect")
@@ -92,18 +134,18 @@ var mobility_tooltip = (function () {
            .attr("transform", "translate(" + (this.width/2 + 30) + ",12) rotate(90)")
            .style("fill", "#eeeeee");
     };
-
-    
-    mobility_tooltip.prototype.drawInfo = function () {
+        
+    mobility_detailview.prototype.drawInfo = function () {
+    	/// <summary>
+    	/// Draw the text information in the detailed view.
+    	/// </summary>
         var that = this;
-
 
         var ttGrp = this.parent.append("g").attr("id", "tooltipInfo");
         var texts = ["Location ID: " + this.data.id,
                      "Visits: " + this.data.count,
                      "Total time spent: " + this.formatTime(this.data.time),
                      "Average time spent: " + Math.round(this.data.avgTime * 100) / 100 + "h"];
-
 
         ttGrp.append("text")
             .attr("y", 36+28)
@@ -112,7 +154,6 @@ var mobility_tooltip = (function () {
             .attr("dy", 14)
             .attr("x", 7)
             .text(function (t) { return t; });
-
 
         ttGrp.append("text")
             .attr({
@@ -124,13 +165,15 @@ var mobility_tooltip = (function () {
 
         ttGrp.attr("transform", "translate(10,10)");
     };
-
     
-    mobility_tooltip.prototype.drawBarChart = function () {
+    /*--------------------------------------  Bar Chart methods    ------------------------------------*/
+    mobility_detailview.prototype.drawBarChart = function () {
+    	/// <summary>
+    	/// Draw the bar chart in the detailed view.
+    	/// </summary>
         var that = this;
         var data = [];
-
-
+        
         this.barChart.grp = this.parent.append("g")
             .attr("class", "barChart");
 
@@ -207,10 +250,10 @@ var mobility_tooltip = (function () {
         this.updateBarChart();
     };
 
-
-    mobility_tooltip.prototype.updateBarChart = function () {
+    mobility_detailview.prototype.updateBarChart = function () {
     	/// <summary>
-    	/// 
+        /// Update the bar chart with new data (change of the displayed time period).
+        /// Also unzooms the bar chart.
         /// </summary>
         var that = this;
         var firstDay = new Date(this.startTime);
@@ -224,8 +267,6 @@ var mobility_tooltip = (function () {
         this.barChart.xAxis
             .tickValues(allMonths)
             .tickFormat(d3.time.format("%b %y"));
-
-
 
         this.barChart.grp.select(".x.axis")
            .call(this.barChart.xAxis);
@@ -328,7 +369,11 @@ var mobility_tooltip = (function () {
         this.barChart.grp.select(".monthRec").style("visibility", "visible");
     };
 
-    mobility_tooltip.prototype.zoomBarChart = function (date) {
+    mobility_detailview.prototype.zoomBarChart = function (date) {
+    	/// <summary>
+    	/// Zoom the bar chart to display a single month.
+    	/// </summary>
+    	/// <param name="date"></param>
         var that = this;
         var startDate = new Date(+date);
         var endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0,0,0,0,1);
@@ -352,7 +397,6 @@ var mobility_tooltip = (function () {
            .tickValues([startDate].concat(weeks))
            .tickFormat(d3.time.format("%d"));
 
-
         this.barChart.grp.select(".x.axis")
            .call(this.barChart.xAxis);
 
@@ -361,8 +405,6 @@ var mobility_tooltip = (function () {
 
         newBars.transition()
             .attr("x", function (d) {
-                console.log(d);
-                console.log(that.barChart.x(d.date))
                 return that.barChart.x(d.date);
             })
             .attr("width", this.barChart.x.rangeBand());
@@ -377,13 +419,18 @@ var mobility_tooltip = (function () {
 
     };
 
-    mobility_tooltip.prototype.drawRadialCharts = function () {
+    /*-------------------------------------  Radial Chart methods    ----------------------------------*/
+    mobility_detailview.prototype.drawRadialCharts = function () {
+    	/// <summary>
+    	/// Draw the radial charts in the detailed view.
+    	/// </summary>
         var that = this;
 
         var radialChartsGrp = this.parent.append("g").attr("id", "radialChartGrp");
         var radialChart = radialChartsGrp.append("g").attr("class", "radialChart").attr("id", "dayHourRadial");
         var bucketCount = this.data.buckets.length;
 
+        // Draw the day-of-week hour-circles
         var dayCircles = radialChart.selectAll(".dayWheel").data(this.data.buckets).enter()
 
         dayCircles.append("g")
@@ -467,6 +514,7 @@ var mobility_tooltip = (function () {
             .style("stroke", "none")
             .style("font-size", "12px");
 
+        // Draw the time-of-day week-circles
         var radialChart2 = radialChartsGrp.append("g").attr("class", "radialChart").attr("id", "todDayRadial");
 
         var todWheel = radialChart2.selectAll(".todWheel").data(this.timesOfDay).enter();
@@ -596,6 +644,7 @@ var mobility_tooltip = (function () {
             .attr("y", 0)
             .text("");
 
+        // Draw the scale
         var scaleGrp = radialChartsGrp.append("g")
             .attr("class", "radialScale");         
 
@@ -654,8 +703,16 @@ var mobility_tooltip = (function () {
         
     };
 
-    mobility_tooltip.prototype.update = function (start, end) {
+    /*----------------------------------------  Utility methods    ------------------------------------*/
+    mobility_detailview.prototype.update = function (start, end) {
+    	/// <summary>
+    	/// Update the detailed view with the new time period, updating all subvisualizations.
+    	/// </summary>
+    	/// <param name="start" type="Number">Timestamp of the start of the new time period</param>
+        /// <param name="end" type="Number">Timestamp of the end of the new time period</param>
         var that = this;
+
+        // Update the radial charts
         this.radialColorScale.domain([d3.min(this.data.buckets, function (f) { return d3.min(f.timeBucket, function (tb) { return tb.total }) }),
             d3.max(this.data.buckets, function (f) { return d3.max(f.timeBucket, function (tb) { return tb.total }) })
         ]);
@@ -677,6 +734,7 @@ var mobility_tooltip = (function () {
                      "Total time spent: " + this.formatTime(this.data.time),
                      "Average time spent: " + Math.round(this.data.avgTime * 100) / 100 + "h"];
 
+        // Update the bar chart
         if (this.barChart.grp != null) {
             this.startTime = start;
             this.endTime = end;
@@ -687,11 +745,14 @@ var mobility_tooltip = (function () {
         d3.select("#tooltipInfo")
             .selectAll("tspan").data(texts)
             .text(function (t) { return t; });
-
-
     };
     
-    mobility_tooltip.prototype.formatTime = function (time) {
+    mobility_detailview.prototype.formatTime = function (time) {
+    	/// <summary>
+    	/// Helper function that formats the time into a string
+    	/// </summary>
+    	/// <param name="time" type="Number">Input timestamp</param>
+    	/// <returns type="String">The output formatted string</returns>
         var hours = Math.floor(time / (1000 * 60 * 60));
         time -= hours * (1000 * 60 * 60);
         var minutes = Math.floor(time / (1000 * 60));
@@ -702,6 +763,6 @@ var mobility_tooltip = (function () {
 
     };
 
-    return mobility_tooltip;
+    return mobility_detailview;
 
 })();

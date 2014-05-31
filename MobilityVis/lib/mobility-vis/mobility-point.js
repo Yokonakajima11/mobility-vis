@@ -1,7 +1,15 @@
-﻿
+﻿/// ======================================================================================================
+/// File: MOBILITY-POINT.js
+/// ======================================================================================================
+/// <summary>
+/// This class represents a single location data point.
+/// </summary>
+/// <author>Marta Magiera</author>
+/// ======================================================================================================
+
 var mobility_point = (function () {
 
-    function mobility_point(id, lat, lon, extent) {
+    function mobility_point(id, lat, lon) {
         /// <summary>
         /// A single data point entity
         /// </summary>
@@ -24,19 +32,17 @@ var mobility_point = (function () {
         /// <field name="visits" type="Array">List of visits at the location</field>
         this.visits = [];
         /// <field name="buckets" type="Array">Bucketed visits data</field>
-        this.buckets = [];
-        
+        this.buckets = [];        
+        /// <field name="hourData" type="Array">Visits split by each hour</field>
         this.hourData = [];
-
+        /// <field name="dayData" type="Array">Visits split by each day</field>
         this.dayData = [];
-
-        this.extent = extent;
-
+        /// <field name="filtered" type="Boolean">If the point is let through the filter</field>
         this.filtered = true;
-
+        /// <field name="locationName" type="String">String with the looked-up location name</field>
         this.locationName = "Unknown location";
+        /// <field name="venue" type="Object">The venue object as read from FourSquare</field>
         this.venue = null;
-
     };
 
     mobility_point.prototype.clear = function () {
@@ -210,10 +216,14 @@ var mobility_point = (function () {
     };
 
     mobility_point.prototype.getLocationData = function (delay) {
-        //
+    	/// <summary>
+    	/// Retrieve the location data from FourSquare.
+    	/// </summary>
+    	/// <param name="delay"></param>
         var point = this;
-
+        
         if ($.jStorage.get("locationCache" + point.id) == null) {
+            // If the location data is not present in the cache, look it up
             setTimeout(function () {
                 d3.json("https://api.foursquare.com/v2/venues/search?ll=" + point.lat + "," + point.lon +
                     "&radius=" + 100 + "&intent=browse&client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&v=20140509",
@@ -231,8 +241,9 @@ var mobility_point = (function () {
                             $.jStorage.set("locationCache" + point.id, point.venue);
                         }
                         else {
+                            // If FourSquare knows nothing about the address, get the address from Open Street Map
                             d3.json("http://nominatim.openstreetmap.org/reverse?format=json&" + 
-                                "lat=" + point.lat + "&lon=" + point.lon ,//+ "&addressdetails=1",
+                                "lat=" + point.lat + "&lon=" + point.lon ,
                                 function(openData){
 
                                     console.log(openData);
@@ -250,6 +261,7 @@ var mobility_point = (function () {
             }, delay);
         }
         else {
+            // Otherwise read from the cache
             point.venue = $.jStorage.get("locationCache" + point.id);
             point.locationName = point.venue.name;
         }
