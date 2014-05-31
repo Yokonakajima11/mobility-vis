@@ -24,7 +24,7 @@ var mobility_gui = (function () {
         this.currentTooltip = null;
 
         /*---------------------------------------  Control    -----------------------------------------*/
-        this.menuExpanded = { filters: false, modes: false };
+        this.menuExpanded = { filters: false };
         this.reopen = false;
         this.blocked = false;
 
@@ -51,7 +51,8 @@ var mobility_gui = (function () {
         /*--------------------------------------  Constructor    -------------------------------------*/
         this.drawCopyright();
         this.drawScale();
-        this.drawMenus();
+        this.drawFilterMenu();
+        this.drawModeMenu();
 
     };
     /*---------------------------------------------------------------------  Scale methods    ---------------------------------------------------------------------*/
@@ -134,7 +135,7 @@ var mobility_gui = (function () {
         this.parent.selectAll(".colorScaleTick").remove();
     };
 
-    mobility_gui.prototype.drawMenus = function () {
+    mobility_gui.prototype.drawFilterMenu = function () {
         var that = this;
         var filterMenu = this.parent.append("g")
             .attr("id", "filterMenu");
@@ -230,7 +231,7 @@ var mobility_gui = (function () {
             })
             .on("mouseout", function () {
                 d3.select(this).select("text").style("fill", null);
-            });;
+            });
 
         resetButtonGrp.append("rect")
            .attr("x", 105)
@@ -242,7 +243,6 @@ var mobility_gui = (function () {
         resetButtonGrp.append("text")
             .attr("x", 115)
             .attr("y", 140 - 2)
-            .style("cursor", "default")
             .text("Reset");
 
         var openGrp = filterMenu.append("g")
@@ -285,10 +285,40 @@ var mobility_gui = (function () {
            .attr("transform", "translate(210,130) rotate(0)")
            .style("fill", "#eeeeee");
 
-        filterMenu.attr("transform", "translate(-200, 10)");
+        filterMenu.attr("transform", "translate(-200, 60)");
+    };
+
+    mobility_gui.prototype.drawModeMenu = function () {
+        var that = this;
+
+        var overlayButtonGrp = this.parent.append("g")
+            .attr("id", "modeMenu")
+            .attr("class", "button")
+            .attr("transform", "translate(10,10)")
+            .on("click", function () {
+                return that.visRef.reopenOverlay();
+            })
+            .on("mouseover", function () {
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function () {
+                d3.select(this).select("text").style("fill", null);
+            });
 
 
-       
+        overlayButtonGrp.append("rect")
+           .attr({
+               x: 0,
+               y: 0,
+               width: 125,
+               height: 35,
+               "class": "tile"
+           })
+        
+        overlayButtonGrp.append("text")
+           .attr("x", 30)
+           .attr("y", 10 + 12)
+           .text("Simple mode");
 
     };
 
@@ -299,7 +329,7 @@ var mobility_gui = (function () {
         d3.select("#filterMenu").transition()
             .duration(500)
             .ease("linear")
-            .attr("transform", "translate(10,10)");
+            .attr("transform", "translate(10,60)");
     };
 
     mobility_gui.prototype.closeFilterMenu = function () {
@@ -309,7 +339,7 @@ var mobility_gui = (function () {
         d3.select("#filterMenu").transition()
             .duration(500)
             .ease("elastic")
-            .attr("transform", "translate(-200, 10)");
+            .attr("transform", "translate(-200, 60)");
     };
 
     mobility_gui.prototype.blockGui = function () {
@@ -318,6 +348,7 @@ var mobility_gui = (function () {
             this.reopen = true;
        // this.hideDetailFrame();
         this.closeFilterMenu();
+        this.closeModeMenu();
 
         d3.select("#filterMenu").select("polyline")
             .style("visibility", "hidden");

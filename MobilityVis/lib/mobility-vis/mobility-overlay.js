@@ -47,25 +47,7 @@ var mobility_overlay = (function () {
         this.radiusScale = d3.scale.pow().exponent(0.3).range([3, 10]);
         this.tree = null;
         this.diagonal = d3.svg.diagonal.radial()
-            //.source(function (d) {
-            //    d.source["isSource"] = true; return d.source;
-            //})
-            //.target(function (d) { d.target["isSource"] = false; return d.target; })
             .projection(function (d) {
-                
-                //var offset = 0
-                //var asdasdad = 0;
-                //if (d.depth)
-                //    asdasdad = (d.depth - 2) * 20
-                //if (d.point)
-                //    offset = 5 * d.point.locationName.length;
-                //if (d.isSource)
-                //    return [d.y + offset + asdasdad, d.x / 180 * Math.PI];
-                //else {
-                    
-                //    return [(d.y + asdasdad), d.x / 180 * Math.PI];
-                //}
-
                 return [d.y, d.x / 180 * Math.PI];
             });
 
@@ -113,7 +95,7 @@ var mobility_overlay = (function () {
 
     
     mobility_overlay.prototype.drawAll = function () {
-
+        var chart = this;
         this.infoLayer.append("rect")
             .attr({
                 x: 970,
@@ -123,6 +105,35 @@ var mobility_overlay = (function () {
                 id: "infoBg",
                 "class": "tile"        
             });
+
+        var closeButtonGrp = this.visLayer.append("g")
+            .attr("transform", "translate(10,10)")
+            .attr("id", "exploreBtn")
+            .attr("class", "button")
+            .on("click", function () {
+                return chart.closeOverlay();
+            })
+            .on("mouseover", function () {
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function () {
+                d3.select(this).select("text").style("fill", null);
+            });;
+
+
+        closeButtonGrp.append("rect")
+           .attr({
+               x: 0,
+               y: 0,
+               width: 125,
+               height: 35,
+               "class": "tile"
+           })
+        
+        closeButtonGrp.append("text")
+           .attr("x", 10)
+           .attr("y", 10 + 12)
+           .text("Exploration mode");
 
         this.drawTree();
         this.drawCalendar();
@@ -704,6 +715,10 @@ var mobility_overlay = (function () {
         
         var once = false;
 
+
+        this.visLayer.select("#exploreBtn")
+            .attr("visibility", "hidden");
+
         this.visLayer.select("#infoLayer")
             .transition()
             .attr("transform", "translate(1900)")
@@ -774,6 +789,9 @@ var mobility_overlay = (function () {
     mobility_overlay.prototype.reopenOverlay = function () {
         var diameter = 1000;
         var chart = this;
+
+        this.visLayer.select("#exploreBtn")
+           .attr("visibility", "visible");
 
         this.visLayer.select("#treeGrp")
                     .transition()
