@@ -51,6 +51,7 @@
     <Content Include="lib\d3.v3\d3.v3.min.js" />
     <Content Include="lib\jquery\jquery.cookie-1.4.1.min.js" />
     <Content Include="lib\jStorage\jstorage.min.js" />
+    <Content Include="lib\mobility-vis\mobility-log.js" />
     <Content Include="lib\mobility-vis\mobility-datastore.js" />
     <Content Include="lib\mobility-vis\mobility-overlay.js" />
     <Content Include="lib\mobility-vis\mobility-point.js" />

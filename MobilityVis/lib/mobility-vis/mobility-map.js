@@ -161,6 +161,9 @@ var mobility_map = (function () {
             d3.select(overlayRef).style("visibility", "hidden");
         }, 500);
 
+        if ($.mlog)
+            $.mlog.logEvent("mapOpened");
+
         this.updateTimeEnd();
     };
 
@@ -424,6 +427,7 @@ var mobility_map = (function () {
             d = chart.map.locationPoint({ lon: d.lon, lat: d.lat });
             return "translate(" + d.x + "," + d.y + ")";
         }
+
     };
 
     mobility_map.prototype.redraw = function () {
@@ -452,7 +456,8 @@ var mobility_map = (function () {
                     return "0";
             });
 
-
+        if ($.mlog)
+            $.mlog.logEvent("mapEvent");
 
         this.gui.drawScaleTick(d.avgTime);
 
@@ -708,6 +713,9 @@ var mobility_map = (function () {
 
         d3.select(".vislayer").selectAll(".locationPoint").remove();
         d3.select(".vislayer").selectAll(".connection").remove();
+        if ($.mlog)
+            $.mlog.logEvent("mapClosed");
+
 
         this.overlayRef.reopenOverlay();
     };

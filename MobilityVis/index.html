@@ -5,6 +5,7 @@
     <script src="lib/d3.v3/d3.v3.js"></script>
     <script src="lib/polymaps/polymaps.js"></script>
     <script src="lib/mobility-vis/mobility-datastore.js"></script>
+    <script src="lib/mobility-vis/mobility-log.js"></script>
     <script src="lib/mobility-vis/mobility-timeline.js"></script>
     <script src="lib/mobility-vis/mobility-map.js"></script>
     <script src="lib/mobility-vis/mobility-overlay.js"></script>
@@ -25,14 +26,16 @@
 
         $(document).ready(function () {
             po = org.polymaps;
-
+            
+            $.mlog = new mobility_log("FAKE URL");
             mdata = new mobility_datastore("data/newdata.csv");
             
-           
+            
             mmap = new mobility_map("vismap", 55.751849, 12.535186, mdata);
             moverlay = new mobility_overlay("vismap", mdata);
             moverlay.setMapRef(mmap);
             mmap.setOverlayRef(moverlay);
+
 
            // addEventListener("overlayClosed", function () { delete moverlay});
            

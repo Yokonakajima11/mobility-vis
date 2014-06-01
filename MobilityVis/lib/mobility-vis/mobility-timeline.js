@@ -151,7 +151,11 @@ var mobility_timeline = (function () {
 
         this.currentStartTime = position[0].getTime();
         this.currentEndTime = position[1].getTime();
-        this.stopPlaying();
+        if (this.playing) {
+            if ($.mlog)
+                $.mlog.logEvent("timelinePlaybackStopped");
+            this.stopPlaying();
+        }
     };
 
     mobility_timeline.prototype.finishUpdate = function () {
@@ -162,6 +166,9 @@ var mobility_timeline = (function () {
             this.visRef.updateTimeEnd();
             this.updatingTime = false;
         }
+
+        if ($.mlog)
+            $.mlog.logEvent("timelineEvent");
     };
 
     /*---------------------------------------  Animation methods    -----------------------------------*/
@@ -170,6 +177,9 @@ var mobility_timeline = (function () {
     	/// Begin the daily animation.
     	/// </summary>
         var that = this;
+        if ($.mlog)
+            $.mlog.logEvent("timelinePlayback");
+
         this.tickDuration = this.visRef.tickDuration = 1000;
         var startDate = new Date(that.currentStartTime).setHours(0, 0, 0, 0);
         that.visRef.startAnimating();
@@ -206,6 +216,8 @@ var mobility_timeline = (function () {
                         id: "stopBtn",
                         shape: that.stopShape,
                         clickFun: function (theButton) {
+                            if ($.mlog)
+                                $.mlog.logEvent("timelinePlaybackStopped");
                             that.stopPlaying();
                             that.visRef.updateTimeEnd();
                         }
@@ -214,6 +226,8 @@ var mobility_timeline = (function () {
                         id: "fastBtn",
                         shape: that.fasterShape,
                         clickFun: function (theButton) {
+                            if ($.mlog)
+                                $.mlog.logEvent("timelinePlaybackEvent");
                             if (that.tickDuration > 200) {
                                 that.tickDuration -= 200;
                                 that.visRef.tickDuration -= 200;
@@ -227,6 +241,8 @@ var mobility_timeline = (function () {
                         id: "slowBtn",
                         shape: that.slowerShape,
                         clickFun: function (theButton) {
+                            if ($.mlog)
+                                $.mlog.logEvent("timelinePlaybackEvent");
                             if (that.tickDuration < 5000) {
                                 that.tickDuration += 200;
                                 that.visRef.tickDuration += 200;
@@ -270,7 +286,10 @@ var mobility_timeline = (function () {
     mobility_timeline.prototype.pausePlaying = function () {
     	/// <summary>
     	/// Pause the daily animation.
-    	/// </summary>
+        /// </summary>
+        if ($.mlog)
+            $.mlog.logEvent("timelinePlaybackStopped");
+
         this.pause = true;
         d3.select("#playButton").attr("d", this.playShape);
     };
@@ -280,6 +299,9 @@ var mobility_timeline = (function () {
     	/// Resume the paused daily animation.
     	/// </summary>
         this.pause = false;
+        if ($.mlog)
+            $.mlog.logEvent("timelinePlayback");
+
         var that = this;
                d3.select("#playButton").attr("d", this.pauseShape);
 
@@ -292,7 +314,7 @@ var mobility_timeline = (function () {
     mobility_timeline.prototype.stopPlaying = function () {
     	/// <summary>
     	/// Stop the daily animation completely.
-    	/// </summary>
+        /// </summary>
         this.playing = false;
         this.pause = false;
         d3.select("#ticker").remove();

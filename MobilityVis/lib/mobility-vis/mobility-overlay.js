@@ -96,6 +96,9 @@ var mobility_overlay = (function () {
         this.infoLayer = this.visLayer.append("g").attr("id", "infoLayer");
 
         addEventListener("dataReady", function (e) {
+            if ($.mlog)
+                $.mlog.logEvent("overlayOpened");
+
             //Data has been loaded - initialize
             chart.data = dataStore.data; 
             chart.graphData = chart.dataStore.makeGraph();
@@ -238,6 +241,9 @@ var mobility_overlay = (function () {
         this.currentCenterId = aNode.point.id;
         var chart = this;
 
+        if ($.mlog)
+            $.mlog.logEvent("treeEvent");
+
         var diagonal = d3.svg.diagonal.radial()
             .projection(function (d) { return [d.y, d.x / 180 * Math.PI]; });
 
@@ -341,7 +347,8 @@ var mobility_overlay = (function () {
                 "transform": "translate(0," + this.calendarPos + ")"
             })
             .on("mousewheel", function () {
-                
+                if ($.mlog)
+                    $.mlog.logEvent("calendarEvent");
                 that.calendarPos += d3.event.wheelDelta;
                 if (d3.event.wheelDelta < 0)
                     d3.select("#upScroll").style("visibility", "visible");
@@ -458,6 +465,8 @@ var mobility_overlay = (function () {
                 rotate: 180,
                 id: "upScroll",
                 fun: function () {
+                    if ($.mlog)
+                        $.mlog.logEvent("calendarEvent");
                     that.calendarPos += 60;
                     d3.select("#downScroll").style("visibility", "visible");
                     if (that.calendarPos < endPos) {
@@ -475,6 +484,8 @@ var mobility_overlay = (function () {
                 rotate: 0,
                 id: "downScroll",
                 fun: function () {
+                    if ($.mlog)
+                        $.mlog.logEvent("calendarEvent");
                     that.calendarPos -= 60;
                     d3.select("#upScroll").style("visibility", "visible");
                     if (that.calendarPos < endPos) {
@@ -840,6 +851,10 @@ var mobility_overlay = (function () {
                             });
                     });
             })
+
+        if ($.mlog)
+            $.mlog.logEvent("overlayClosed");
+
     };
 
     mobility_overlay.prototype.reopenOverlay = function () {
@@ -848,6 +863,9 @@ var mobility_overlay = (function () {
     	/// </summary>
         var diameter = 1000;
         var chart = this;
+
+        if ($.mlog)
+            $.mlog.logEvent("overlayOpened");
 
         this.visLayer.select("#exploreBtn")
            .attr("visibility", "visible");

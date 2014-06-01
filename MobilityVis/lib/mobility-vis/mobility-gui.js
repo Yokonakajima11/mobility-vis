@@ -167,6 +167,9 @@ var mobility_gui = (function () {
             .append("g")
             .attr("class", "weekButton button")
             .on("click", function (d, i) {
+                if ($.mlog)
+                    $.mlog.logEvent("filterEvent");
+
                 that.weekData[i].clicked = !that.weekData[i].clicked;
                 if (that.weekData[i].clicked)
                     d3.select(this).select("rect").style("fill", "rgb(232, 12, 122)");
@@ -198,6 +201,9 @@ var mobility_gui = (function () {
             .append("g")
             .attr("class", "podButton button")
             .on("click", function (d, i) {
+                if ($.mlog)
+                    $.mlog.logEvent("filterEvent");
+
                 that.partOfDayData[i].clicked = !that.partOfDayData[i].clicked;
                 if (that.partOfDayData[i].clicked)
                     d3.select(this).select("rect").style("fill", "rgb(232, 12, 122)");
@@ -228,6 +234,9 @@ var mobility_gui = (function () {
         var resetButtonGrp = filterMenu.append("g")
             .attr("class", "button")
             .on("click", function () {
+                if ($.mlog)
+                    $.mlog.logEvent("filterEvent");
+
                 that.weekData.forEach(function (d, i) {
                     if (d.clicked)
                         that.visRef.updateDayOfWeekFilter(i);

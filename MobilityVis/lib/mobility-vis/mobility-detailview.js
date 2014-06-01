@@ -86,6 +86,9 @@ var mobility_detailview = (function () {
         this.drawBarChart();
         this.drawRadialCharts();
 
+        if ($.mlog)
+            $.mlog.logEvent("mapDetailOpened");
+
     };
 
     /*----------------------------------------  Drawing methods    ------------------------------------*/
@@ -105,7 +108,10 @@ var mobility_detailview = (function () {
 
         var openGrp = this.parent.append("g")
             .attr("class", "button")
-            .on("click", function () {  
+            .on("click", function () {
+                if ($.mlog)
+                    $.mlog.logEvent("mapDetailClosed");
+
                 that.closeFun();
             })
             .on("mouseover", function () {
@@ -337,6 +343,8 @@ var mobility_detailview = (function () {
                d3.select(this).style("opacity", 0);
            })
            .on("click", function (d) {
+               if ($.mlog)
+                   $.mlog.logEvent("barChartEvent");
                that.zoomBarChart(d);
            });
 
@@ -360,6 +368,8 @@ var mobility_detailview = (function () {
                d3.select(this).style("opacity", 0);
            })
            .on("click", function () {
+               if ($.mlog)
+                   $.mlog.logEvent("barChartEvent");
                that.updateBarChart();
            });
 
@@ -432,6 +442,8 @@ var mobility_detailview = (function () {
 
         // Draw the day-of-week hour-circles
         var dayCircles = radialChart.selectAll(".dayWheel").data(this.data.buckets).enter()
+        var hoverTime = -1;
+
 
         dayCircles.append("g")
             .attr("class", "dayWheel")
@@ -458,6 +470,7 @@ var mobility_detailview = (function () {
                     .attr("stroke-width", "0.3px")
                     .attr("id", function (e, j) { return "slice-" + (bucketCount - i - 1) + "-" + j })
                     .on("mouseover", function (e, j) {
+                        hoverTime = Date.now();
                         d3.select(this)
                             .transition()
                             .style("stroke-width", "4px");                            
@@ -465,6 +478,10 @@ var mobility_detailview = (function () {
                             .text(e.count + " " + (e.count==1?"visit":"visits") + " on " + d.day + " at " + (j < 13 ? (j + " am") : ((j - 12) + " pm")));
                     })
                     .on("mouseout", function () {
+                        if (Date.now() - hoverTime > 500 && hoverTime != -1)
+                            if ($.mlog)
+                                $.mlog.logEvent("radialChartEvent");
+                        hoverTime = -1;
                         d3.select(this)
                             .transition()
                             .style("stroke-width", "0.3px");
@@ -543,6 +560,7 @@ var mobility_detailview = (function () {
                     .attr("stroke", "gray")
                     .attr("stroke-width", "0.3px")
                     .on("mouseover", function (e, j) {
+                        hoverTime = Date.now();
                         var timeSpent = that.data.sumBucketsNoCorrection(j, d.from, d.to);
 
                         d3.select(this)
@@ -552,6 +570,10 @@ var mobility_detailview = (function () {
                             .text(Math.round(timeSpent * 100) / 100 + "h in total on " + e.day + " " + d.label + "s");
                     })
                     .on("mouseout", function () {
+                        if (Date.now() - hoverTime > 500 && hoverTime != -1)
+                            if ($.mlog)
+                                $.mlog.logEvent("radialChartEvent");
+                        hoverTime = -1;
                         d3.select(this)
                             .transition()
                             .style("stroke-width", "0.3px");
@@ -607,6 +629,9 @@ var mobility_detailview = (function () {
             .attr("id", "switchButton")
             .attr("class", "button")
             .on("click", function () {
+                if ($.mlog)
+                    $.mlog.logEvent("radialChartSwitch");
+
                 d3.selectAll(".radialChart")
                     .style("visibility", "visible");
                 d3.select(that.radialChart)
