@@ -239,6 +239,8 @@ var mobility_point = (function () {
                         if (point.venue) {
                             point.locationName = point.venue.name;
                             $.jStorage.set("locationCache" + point.id, point.venue);
+                            var event = new Event("pointLocDataUpdated");
+                            dispatchEvent(event);
                         }
                         else {
                             // If FourSquare knows nothing about the address, get the address from Open Street Map
@@ -252,6 +254,8 @@ var mobility_point = (function () {
                                         if (openData.address.house_number != null)
                                             point.locationName += openData.address.house_number;
                                         $.jStorage.set("locationCache" + point.id, { name: point.locationName });
+                                        var event = new Event("pointLocDataUpdated");
+                                        dispatchEvent(event);
                                     }
                                 })
                         }
@@ -265,6 +269,8 @@ var mobility_point = (function () {
             point.venue = $.jStorage.get("locationCache" + point.id);
             point.locationName = point.venue.name;
         }
+
+        
     };
     
     return mobility_point;

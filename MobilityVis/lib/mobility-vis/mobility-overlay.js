@@ -116,6 +116,10 @@ var mobility_overlay = (function () {
 
             chart.drawAll();
         });
+
+        addEventListener("pointLocDataUpdated", function() {
+            chart.updateLabels();
+        })
     };
 
     
@@ -168,6 +172,22 @@ var mobility_overlay = (function () {
         this.drawTree();
         this.drawCalendar();
         this.drawInfo();       
+    };
+
+    mobility_overlay.prototype.updateLabels = function () {
+    	/// <summary>
+    	/// Update text labels if a point data was loaded asynchronously 
+        /// </summary>
+        var chart = this;
+        this.visLayer.selectAll(".node")
+            .selectAll("text")           
+            .text(function (d) {
+                return d.point.locationName.substr(0, 16) + (((d.point.locationName.length) > 16) ? "..." : "");
+            });
+
+        this.visLayer.select(".info").remove();
+
+        this.drawInfo();
     };
 
     /*-------------------------------------------  Tree methods    ------------------------------------*/
