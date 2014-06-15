@@ -65,10 +65,19 @@ var mobility_overlay = (function () {
         this.calendarPos = 0;
         /// <field name="colorScale" type="d3.scale">The color scale for the top 5 locations</field>
         this.colorScale = d3.scale.ordinal().range(["#E80C7A", "#9AD954", "#8047C3", "#FF9A54", "#FFE73D"]);
+        //this.colorScale = d3.scale.ordinal().range(["#C9313D", "#F9722E", "#CDD452", "#375D81", "#183152"]);
+        /// <field name="linkScale" type="d3.scale">The scale for thickness of links</field>
+        this.linkScale = d3.scale.linear().range([1, 5]).domain([5, 50]).clamp(true);
+        
+
         /// <field name="extraColor" type="String">The extra color of the selected point</field>
         this.extraColor = "cyan";
         /// <field name="radiusScale" type="d3.scale">The radius scale for the tree circles</field>
         this.radiusScale = d3.scale.pow().exponent(0.3).range([3, 10]);
+        /// <field name="dayBarWidth" type="Number">The width of a single day in the calendar</field>
+        this.dayBarWidth = 2.75;
+        /// <field name="calendarViewHeight" type="Number">The height of the calendar</field>
+        this.calendarViewHeight = 235;
         
         /// <field name="diagonal" type="d3.svg.diagonal">The diagonal for the tree layout</field>
         this.diagonal = d3.svg.diagonal.radial()
@@ -91,9 +100,12 @@ var mobility_overlay = (function () {
                         width: document.getElementById(this.parentId).offsetWidth,
                         height: document.getElementById(this.parentId).offsetHeight,
                         id: "background",
-                    }).style("fill","#C9C9C9");
+                    }).style("fill","#ccc");
 
-        this.infoLayer = this.visLayer.append("g").attr("id", "infoLayer");
+        this.infoLayer = this.visLayer.append("g")
+            .attr("id", "infoLayer")
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 570) + ",10)");
+
 
         addEventListener("dataReady", function (e) {
             if ($.mlog)
@@ -131,13 +143,21 @@ var mobility_overlay = (function () {
         //Draw the box on the right
         this.infoLayer.append("rect")
             .attr({
-                x: 970,
-                y: 10,
-                width: 1920 - 10 - 970,
-                height: 980 - 20,
+                x: 0,
+                y: 0,
+                width: 560,
+                height: 730,
                 id: "infoBg",
                 "class": "tile"        
             });
+
+        this.infoLayer.append("text")//.attr("class", "darkText")
+           .attr({
+               x: 200,
+               y: 30
+           })
+           .text("Top 5 Locations")
+           .style("font-size", "24");
 
         // Draw the button that closes the overlay
         var closeButtonGrp = this.visLayer.append("g")
@@ -196,7 +216,8 @@ var mobility_overlay = (function () {
     	/// Draw the tree graph.
     	/// </summary>
         var chart = this;
-        var diameter = 1000;
+        var diameter = 750;
+        
 
         this.tree = d3.layout.tree()
             .size([360, diameter / 2 - 120])
@@ -214,13 +235,31 @@ var mobility_overlay = (function () {
             .data(links)
             .enter().append("path")
             .attr("class", "link")
-            .attr("d", this.diagonal);
+            .attr("d", this.diagonal)
+            .style("stroke-width", function (d) {
+                return chart.linkScale(d.target.strengthToParent);
+
+            });
 
         var node = svg.selectAll(".node")
             .data(nodes, function (d) { return d.point.id; })
             .enter().append("g")
             .attr("class", "node")
             .attr("transform", function (d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
+            .on("mouseover", function (d) {
+                return d3.select(this).select("text")
+                    .text(d.point.locationName)
+                    .style("font-weight", "bold")
+                    .style("fill", "white");
+
+            })
+            .on("mouseout", function (d) {
+                return d3.select(this).select("text")
+                    .text(d.point.locationName.substr(0, 7) + (((d.point.locationName.length) > 7) ? "..." : ""))
+                    .style("font-weight", "normal")
+                    .style("fill", null);
+
+            });
 
         node.append("circle")
             .attr("r", function (d) {
@@ -236,7 +275,7 @@ var mobility_overlay = (function () {
                 if (chart.colorScale.domain().indexOf(d.point.id) != -1)
                     return chart.colorScale(d.point.id);
                 else
-                    return "white";                
+                    return null;                
             })
             .style("cursor", "pointer");
 
@@ -247,7 +286,7 @@ var mobility_overlay = (function () {
             .style("pointer-events", "none")
             .attr("class","darkText")
             .text(function (d) {
-                return d.point.locationName.substr(0, 16) + (((d.point.locationName.length) > 16) ? "..." : "");
+                return d.point.locationName.substr(0, 7) + (((d.point.locationName.length) > 7) ? "..." : "");
             })
     };
 
@@ -290,7 +329,11 @@ var mobility_overlay = (function () {
                         .data(links)
                         .enter().append("path")
                         .attr("class", "link")
-                        .attr("d", chart.diagonal);
+                        .attr("d", chart.diagonal)
+                        .style("stroke-width", function (d) {
+                            return chart.linkScale(d.target.strengthToParent);
+
+                        });;
 
                     chart.visLayer.select("#treeGrp").selectAll(".node").append("text").attr("class", "darkText")
                         .attr("dy", ".31em")
@@ -298,7 +341,7 @@ var mobility_overlay = (function () {
                         .attr("transform", function (d) { return d.x < 180 ? "translate(12)" : "rotate(180)translate(-8)"; })
                         .style("pointer-events", "none")
                         .text(function (d) {
-                            return d.point.locationName.substr(0, 16) + (((d.point.locationName.length) > 16) ? "..." : "");
+                            return d.point.locationName.substr(0, 7) + (((d.point.locationName.length) > 7) ? "..." : "");
                         })
                     redrawn = true;
                 }
@@ -311,7 +354,7 @@ var mobility_overlay = (function () {
                 else if (d.point.id == chart.currentCenterId)
                     return chart.extraColor;
                 else
-                    return "white";
+                    return null;
             })
         this.addToCalendar(aNode);
         this.addToInfo(aNode);
@@ -337,16 +380,24 @@ var mobility_overlay = (function () {
             endWeek = 53;
 
         // Minimum and maximum vertical translation of the calendar - for scrolling
-        var endPos = 370 - (((endYear - 1) - startYear + 1) * 52 * 15 + (endWeek + 2) * 15) + 405;
-        var startPos = 370 - startWeek * 15;
+        var endPos = 50 - (((endYear - 1) - startYear + 1) * 52 * 15 + (endWeek + 2) * 15) + this.calendarViewHeight;
+        var startPos = 50 - (startWeek) * 15;
 
-        this.calendarPos = endPos;
+        this.calendarPos = endPos;//0;//endPos;
 
         var bigGrp = this.infoLayer.append("g")
             .attr({
                 id: "calendarVis",
-                transform: "translate(1040, -400)"
+                transform: "translate(70, 430)"
             })
+
+        bigGrp.append("text")//.attr("class", "darkText")
+           .attr({
+               x: -62,
+               y: 20
+           })
+           .text("Weekly visits")
+           .style("font-size", "20");
 
         // Establish the clip mask
         var clipMask = bigGrp.append("defs").append("clipPath")
@@ -354,9 +405,9 @@ var mobility_overlay = (function () {
             .append("rect")
             .attr({
                 x: -100,
-                y: 460,
-                width: 7 * 24 * 5 + 100,
-                height: 310
+                y: 50,
+                width: 7 * 24 * this.dayBarWidth + 100,
+                height: this.calendarViewHeight
             });
 
         var calGrp = bigGrp.append("g")
@@ -393,7 +444,7 @@ var mobility_overlay = (function () {
             .attr({
                 x: 0,
                 y: startWeek * 15,
-                width: 7 * 24 * 5,
+                width: 7 * 24 * this.dayBarWidth,
                 height: (((endYear - 1) - startYear + 1) * 52 * 15 + (endWeek+1) * 15) - startWeek * 15,
                 "class": "tile"
             });
@@ -408,7 +459,7 @@ var mobility_overlay = (function () {
                     x: 0,
                     y: 0,
                     height: 14,
-                    width: 5,
+                    width: this.dayBarWidth,
                     "class": "hourTick",
                     transform: function (d, i) {
                         var dDate = new Date(d.timestamp);
@@ -420,7 +471,7 @@ var mobility_overlay = (function () {
                         var dDoW = (dDate.getDay() + 6) % 7;
                         var dHour = dDate.getHours();
 
-                        return "translate(" + (5 * (24 * dDoW + dHour)) + ","
+                        return "translate(" + (that.dayBarWidth * (24 * dDoW + dHour)) + ","
                             + ((dYear - startYear) * 52 + dWeek) * 15 + ")";
                     },
                     id: function (d, i) {
@@ -442,10 +493,11 @@ var mobility_overlay = (function () {
         bigGrp.selectAll(".dow").data(DoW).enter().append("g")
             .append("text")//.attr("class", "darkText")
             .attr({
-                x: function (d, i) { return (24*i*5) + 40},
-                y: 450
+                x: function (d, i) { return (24 * i * that.dayBarWidth) + 10 },
+                y: 40
             })
-            .text(function (d) { return d });
+            .text(function (d) { return d })
+            .style("font-size", "11px");
 
         // The extra things on the calendar - week labels and lines
         var extraGrp = calGrp.append("g").attr("id", "extra");
@@ -471,8 +523,8 @@ var mobility_overlay = (function () {
         extraGrp.selectAll("line").data([1, 2, 3, 4, 5, 6]).enter()
             .append("line")
             .attr({
-                x1: function (d) { return d * 24 * 5; },
-                x2: function (d) { return d * 24 * 5; },
+                x1: function (d) { return d * 24 * that.dayBarWidth; },
+                x2: function (d) { return d * 24 * that.dayBarWidth; },
                 y1: startWeek * 15,
                 y2: (((endYear - 1) - startYear + 1) * 52 * 15 + (endWeek + 1) * 15)
             })
@@ -526,7 +578,7 @@ var mobility_overlay = (function () {
                 d: arrowShape,
                 id: function (d) { return d.id; },
                 transform: function (d, i) {
-                    return "translate(" + (5 * (24 * 6 + 24) + 15) + "," + (i * 280 + 475) + ")rotate(" + d.rotate + ")";
+                    return "translate(" + (that.dayBarWidth * (24 * 6 + 24) + 15) + "," + (i * 205 + 60) + ")rotate(" + d.rotate + ")";
                 },
                 "class": "timelineButton button"
             })
@@ -542,6 +594,7 @@ var mobility_overlay = (function () {
     	/// Add the extra clicked location onto the calendar.
     	/// </summary>
     	/// <param name="aNode" type="Object">The tree node to add to the calendar visualization</param>
+        var that = this;
         var calGrp = this.visLayer.select("#calGrp").select("#points");
         calGrp.selectAll(".selectedHourTick").remove();
         // If the point is already on the calendar (top 5) do nothing
@@ -559,7 +612,7 @@ var mobility_overlay = (function () {
                     x: 0,
                     y: 0,
                     height: 14,
-                    width: 5,
+                    width: this.dayBarWidth,
                     "class": "hourTick selectedHourTick",
                     transform: function (d, i) {
                         var dDate = new Date(d.timestamp);
@@ -571,7 +624,7 @@ var mobility_overlay = (function () {
                         var dDoW = (dDate.getDay() + 6) % 7;
                         var dHour = dDate.getHours();
 
-                        return "translate(" + (5 * (24 * dDoW + dHour)) + ","
+                        return "translate(" + (that.dayBarWidth * (24 * dDoW + dHour)) + ","
                             + ((dYear - startYear) * 52 + dWeek) * 15 + ")";
                     },
                     id: function (d, i) {
@@ -599,18 +652,19 @@ var mobility_overlay = (function () {
         var chart = this;
 
         var infoGrp = this.infoLayer.append("g").attr("class", "info");
+        var DoW = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-        var sparkW = 7 * 24 * 5;
-        var sparkH = 30;
+        var sparkW = 7 * 24 * this.dayBarWidth;
+        var sparkH = 20;
         var sparkX = d3.scale.linear().domain([0, 24 * 7]).range([0, sparkW]);
 
         infoGrp.append("text")//.attr("class", "darkText")
            .attr({
                x: 0,
-               y: 0
+               y: 20
            })
-           .text("Top 5 locations - average week trends")
-           .style("font-size", "36");
+           .text("Average week trends")
+           .style("font-size", "20");
 
 
         for (var k = 0; k < 5 && k < chart.data.location.length; k++) {
@@ -635,58 +689,72 @@ var mobility_overlay = (function () {
                 });
 
             var thisGroup = infoGrp.append("g")
-                .attr("transform", "translate(0," + (k * 84 + 30) + ")");
+                .attr("transform", "translate(0," + (k * 61 + 30) + ")");
 
             thisGroup.append("text")//.attr("class", "darkText")
                 .attr({
-                    x: 34,
-                    y: 20
+                    x: 22,
+                    y: 19
                 })
                 .text(chart.data.location[k].locationName)
-                .style("font-size", "24");
+                .style("font-size", "14");
 
             thisGroup.append("rect")
                 .attr({
                     x: 0,
-                    y: 0,
-                    width: 24,
-                    height: 24
+                    y: 10,
+                    width: 12,
+                    height: 12
                 })
                 .style("fill", chart.colorScale(chart.data.location[k].id));
 
             var thisPathGrp = thisGroup.append("g")
-                  .attr("transform", "translate(0,40)");
+                  .attr("transform", "translate(62,30)");
 
             thisPathGrp.append("path")
                   .attr("d", sparkLine(sparklineData))
                   .style("fill", "none")
-                  .style("stroke", "white");
+                  .style("stroke", "white")
+                  .style("stroke-width", "1.5px");
 
             thisPathGrp.selectAll("line").data([1, 2, 3, 4, 5, 6]).enter()
                .append("line")
                .attr({
-                   x1: function (d) { return d * 24 * 5; },
-                   x2: function (d) { return d * 24 * 5; },
+                   x1: function (d) { return d * 24 * chart.dayBarWidth; },
+                   x2: function (d) { return d * 24 * chart.dayBarWidth; },
                    y1: 0,
                    y2: sparkH,
-                   "stroke-dasharray": "5,5"
+                   "stroke-dasharray": "5,2"
                })
-               .style("stroke", "grey")
+               .style("stroke", "#fafafa")
                .style("stroke-width", "0.5px");
 
             thisPathGrp
                .append("line")
                .attr({
                    x1: 0,
-                   x2: 7*24*5,
+                   x2: sparkW,
                    y1: sparkH,
                    y2: sparkH
                })
-               .style("stroke", "grey")
+               .style("stroke", "#fafafa")
                .style("stroke-width", "0.5px");
+
+            //thisPathGrp.selectAll(".dow").data(DoW).enter().append("g")
+            //    .append("text")//.attr("class", "darkText")
+            //    .attr({
+            //        x: function (d, i) { return (24 * i * chart.dayBarWidth) + 25 },
+            //        y: 35
+            //    })
+            //    .text(function (d) { return d.substring(0,2) })
+            //    .style("font-size", "10px");
+
         }
 
-        infoGrp.attr("transform", "translate(1040,410)");
+
+
+
+        infoGrp.attr("transform", "translate(10,35)");
     };
 
     mobility_overlay.prototype.addToInfo = function (aNode) {
@@ -694,7 +762,10 @@ var mobility_overlay = (function () {
         /// Add the extra clicked location to the top locations with a sparkline.
         /// </summary>
         /// <param name="aNode" type="Object">The tree node to add to the top section</param>
+        var chart = this;
+
         this.visLayer.select("#addedInfo").remove();
+        var DoW = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
         // If the point is already on the calendar (top 5) do nothing
         for (var i = 0; i < 5 && i < this.data.location.length; i++) {
@@ -705,8 +776,8 @@ var mobility_overlay = (function () {
         var chart = this;
         var infoGrp = this.visLayer.select(".info");
         var sparklineData = [];
-        var sparkW = 7 * 24 * 5;
-        var sparkH = 30;
+        var sparkW = 7 * 24 * this.dayBarWidth;
+        var sparkH = 20;
         var sparkX = d3.scale.linear().domain([0, 24 * 7]).range([0, sparkW]);
         var data = aNode.point;
 
@@ -729,56 +800,66 @@ var mobility_overlay = (function () {
             });
 
         var thisGroup = infoGrp.append("g")
-            .attr("transform", "translate(0," + (5 * 84 + 30) + ")")
+            .attr("transform", "translate(0," + (5 * 61 + 30) + ")")
             .attr("id", "addedInfo");
 
         thisGroup.append("text")
             .attr({
-                x: 34,
-                y: 20
+                x: 25,
+                y: 22
             })
             .text(data.locationName)
-            .style("font-size", "24");
+            .style("font-size", "16");
 
         thisGroup.append("rect")
             .attr({
                 x: 0,
-                y: 0,
-                width: 24,
-                height: 24
+                y: 10,
+                width: 12,
+                height: 12
             })
             .style("fill", chart.extraColor);
 
         var thisPathGrp = thisGroup.append("g")
-              .attr("transform", "translate(0,40)");
+              .attr("transform", "translate(62,30)");
 
         thisPathGrp.append("path")
               .attr("d", sparkLine(sparklineData))
               .style("fill", "none")
-              .style("stroke", "white");
+              .style("stroke", "white")
+              .style("stroke-width", "1.5px");;
 
         thisPathGrp.selectAll("line").data([1, 2, 3, 4, 5, 6]).enter()
            .append("line")
            .attr({
-               x1: function (d) { return d * 24 * 5; },
-               x2: function (d) { return d * 24 * 5; },
+               x1: function (d) { return d * 24 * chart.dayBarWidth; },
+               x2: function (d) { return d * 24 * chart.dayBarWidth; },
                y1: 0,
                y2: sparkH,
-               "stroke-dasharray": "5,5"
+               "stroke-dasharray": "5,2"
            })
-           .style("stroke", "grey")
+           .style("stroke", "#fafafa")
            .style("stroke-width", "0.5px");
 
         thisPathGrp
            .append("line")
            .attr({
                x1: 0,
-               x2: 7 * 24 * 5,
+               x2: sparkW,
                y1: sparkH,
                y2: sparkH
            })
-           .style("stroke", "grey")
+           .style("stroke", "#fafafa")
            .style("stroke-width", "0.5px");
+
+        //thisPathGrp.selectAll(".dow").data(DoW).enter().append("g")
+        //    .append("text")//.attr("class", "darkText")
+        //    .attr({
+        //        x: function (d, i) { return (24 * i * chart.dayBarWidth) + 25 },
+        //        y: 35
+        //    })
+        //    .text(function (d) { return d.substring(0, 2) })
+        //    .style("font-size", "10px");
     };
 
     /*----------------------------------------  Utility methods    ------------------------------------*/
@@ -791,6 +872,10 @@ var mobility_overlay = (function () {
                 width: document.getElementById(this.parentId).offsetWidth,
                 height: document.getElementById(this.parentId).offsetHeight
             });
+
+        d3.select("#infoLayer")
+           .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 570) + ",10)");
+
     };
 
     mobility_overlay.prototype.setMapRef = function (ref) {
@@ -881,7 +966,7 @@ var mobility_overlay = (function () {
     	/// <summary>
     	/// Re-open the overlay with the simple view, covering the map.
     	/// </summary>
-        var diameter = 1000;
+        var diameter = 750;
         var chart = this;
 
         if ($.mlog)
@@ -922,7 +1007,7 @@ var mobility_overlay = (function () {
                     .each("end", function() {
                         chart.visLayer.select("#infoLayer")
                          .transition()
-                         .attr("transform", "translate(0,0)")                        
+                         .attr("transform", "translate(" + (document.getElementById(chart.parentId).offsetWidth - 570) + ",10)");
                     });
 
         this.graphData = this.dataStore.makeGraph();

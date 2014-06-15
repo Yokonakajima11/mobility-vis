@@ -16,8 +16,8 @@ html, body {
 
 
  #container, #vismap {
-    min-width: 1900px;
-    min-height: 900px;
+    min-width: 1300px;
+    min-height: 740px;
     width: 100%;
     height: 100%;
     display: block;
@@ -72,7 +72,10 @@ text {
 }
 
     text.darkText {
-        fill: #555;
+        font-family: Helvetica-Normal;
+        font-variant: normal;
+        font-size:10px;
+        fill: #333;
     }
 
     text.copyright {
@@ -130,7 +133,8 @@ text {
 
 .connection {
     fill: none;
-    stroke: #023E73;
+    /*stroke: #023E73;*/
+    stroke: #444;
 }
 
 .compass .back {
@@ -186,8 +190,9 @@ text {
 
 
 .node circle {
-  fill: #fff;
-  stroke: #222;
+  fill: #777;
+  opacity: 0.8;
+  stroke: #eee;
   stroke-width: 1px;
 }
 
@@ -197,7 +202,7 @@ text {
 
 .link {
     fill: none;
-    stroke: #ABB4BC;
+     stroke: #999999;
     stroke-width: 1.5px;
   
 }

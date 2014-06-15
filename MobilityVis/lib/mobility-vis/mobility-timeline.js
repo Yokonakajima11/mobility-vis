@@ -27,7 +27,7 @@ var mobility_timeline = (function () {
         var chart = this;
 
         /// <field name="parent" type="d3.selection">The selection containing the parent SVG container</field>
-        this.parent = parentContainer.append("g");
+        this.parent = parentContainer.append("g").attr("id", "timelineContainer");
         /// <field name="visRef" type="mobility_map">The reference to the main map visualization</field>
         this.visRef = visRef;
         /// <field name="startTime" type="Number">The timestamp of the beginning of the timeline</field>
@@ -151,6 +151,7 @@ var mobility_timeline = (function () {
 
         this.currentStartTime = position[0].getTime();
         this.currentEndTime = position[1].getTime();
+        this.visRef.updateTime(this.currentStartTime, this.currentEndTime);
         if (this.playing) {
             if ($.mlog)
                 $.mlog.logEvent("timelinePlaybackStopped");
@@ -362,8 +363,9 @@ var mobility_timeline = (function () {
 
         this.currentStartTime = this.startTime;
         this.currentEndTime = this.endTime;
-        this.parent.select("g").remove();
-
+        this.parent.selectAll("*").remove();
+        //d3.selectAll("#timelineContainer").remove();
+        //this.parent = parentContainer.append("g").attr("id", "timelineContainer");
         this.drawTimeline();
     };
 

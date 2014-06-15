@@ -49,9 +49,9 @@ var mobility_detailview = (function () {
         /// <field name="radialChart" type="String">Id of the radial chart container SVG group</field>
         this.radialChart = "#dayHourRadial";
         /// <field name="startRadius" type="Number">The inner radius of the radial chart visualization</field>
-        this.startRadius = 25;
+        this.startRadius = 22;
         /// <field name="midRadius" type="Number">The mid radius of each circle in the radial chart visualization</field>
-        this.midRadius = 15;
+        this.midRadius = 12;
         /// <field name="timesOfDay" type="Array">The data for various times of day</field>
         this.timesOfDay = [{ from: 0, to: 6, label: "Dusk" },
                                { from: 6, to: 12, label: "Morning" },
@@ -72,9 +72,9 @@ var mobility_detailview = (function () {
             /// <field name="yAxis" type="d3.svg.axis">The y axis for the bar chart</field>
             yAxis: null,
             /// <field name="width" type="Number">The width of the bar chart/field>
-            width: 550,
+            width: 670,
             /// <field name="height" type="Number">The height of the bar chart</field>
-            height: 300,
+            height: 250,
             /// <field name="grp" type="d3.selection">The selection containg the bar chart</field>
             grp: null
         };
@@ -135,6 +135,12 @@ var mobility_detailview = (function () {
             .attr("x", this.width/2 - 30)
             .text("Details");
 
+        openGrp.append("text")
+            .attr("y", 18)
+            .attr("x", this.width - 20)
+            .text("X");
+
+
         openGrp.append("polyline")
            .attr("points", "-5,-5 5,0 -5,5")
            .attr("transform", "translate(" + (this.width/2 + 30) + ",12) rotate(90)")
@@ -148,17 +154,38 @@ var mobility_detailview = (function () {
         var that = this;
 
         var ttGrp = this.parent.append("g").attr("id", "tooltipInfo");
-        var texts = ["Location ID: " + this.data.id,
-                     "Visits: " + this.data.count,
-                     "Total time spent: " + this.formatTime(this.data.time),
-                     "Average time spent: " + Math.round(this.data.avgTime * 100) / 100 + "h"];
+        var texts = ["Visits: ",
+                     "Total time spent: ",
+                     "Average time spent: ",
+                     "Recent visits:"];
+
+        var textsValues = [this.data.count,
+                           this.formatTime(this.data.time),
+                           Math.round(this.data.avgTime * 100) / 100 + "h"];
+
+
+        var format = d3.time.format("%a %d %B %Y %X");
+        for (var i = this.data.visits.length - 1;
+            i >= 0 && i > this.data.visits.length - 4; i--) {
+            textsValues = textsValues.concat([format(new Date(this.data.visits[i].start))]);
+        }
 
         ttGrp.append("text")
-            .attr("y", 36+28)
+            .attr("y", 26+48)
             .selectAll("tspan").data(texts).enter()
             .append("tspan")
-            .attr("dy", 14)
+            .attr("dy", 26)
             .attr("x", 7)
+            .style("font-weight", "bold")
+            .text(function (t) { return t; });
+
+        ttGrp.append("text")
+            .attr("y", 26 + 48)
+            .selectAll("tspan").data(textsValues).enter()
+            .append("tspan")
+            .attr("class", "textValue")
+            .attr("dy", 26)
+            .attr("x", 147)
             .text(function (t) { return t; });
 
         ttGrp.append("text")
@@ -167,7 +194,7 @@ var mobility_detailview = (function () {
                 y: 36+14
             })
             .text(this.data.locationName)
-            .style("font-size", "36");
+            .style("font-size", "36px");
 
         ttGrp.attr("transform", "translate(10,10)");
     };
@@ -191,13 +218,14 @@ var mobility_detailview = (function () {
             .text("Visits over time")
             .style("font-size", "18px");
 
-        this.barChart.grp.attr("transform", "translate(430," + (this.height - 350) + ")");
-        titleText.attr("transform", "translate(230, -20)");
+        this.barChart.grp.attr("transform", "translate(60," + (this.height - 300) + ")");
+        titleText.attr("transform", "translate(" + (this.barChart.width / 2 - 80) + ", -20)");
 
         this.barChart.x = d3.scale.ordinal().rangeBands([0, this.barChart.width], .5, 10);
         this.barChart.y = d3.scale.linear().range([this.barChart.height, 0]);
 
-        this.barChart.y.domain([0, 24]);
+        var maxTime = Math.floor(d3.max(this.data.dayData, function (d) { return d.length; })) + 1;
+        this.barChart.y.domain([0, maxTime]);
 
         this.barChart.xAxis = d3.svg.axis()
            .scale(this.barChart.x)
@@ -226,7 +254,7 @@ var mobility_detailview = (function () {
         var legend = this.barChart.grp.append("g")
             .attr({
                 id: "barLegend",
-                transform: "translate(" + this.barChart.width + ",0)"
+                transform: "translate(" + (this.barChart.width / 2 - 80) + "," + (this.barChart.height + 30) + ")"
             });
 
         var legendPos = legend.selectAll("barLegendPos")
@@ -238,8 +266,8 @@ var mobility_detailview = (function () {
             
         legendPos.append("rect")
             .attr({
-                x: 0,
-                y: function (d, i) { return i * 20  },
+                x: function (d, i) { return i * 70 },
+                y: 0,
                 width: 10,
                 height: 10
             })
@@ -247,8 +275,8 @@ var mobility_detailview = (function () {
        
         legendPos.append("text")
             .attr({
-                x: 12,
-                y: function (d, i) { return i * 20 + 10 }
+                x: function (d, i) { return i * 70 + 15 },
+                y: 9
             })
             .text(function (d) { return d.text })
             .style("font-size", "11px");
@@ -264,8 +292,10 @@ var mobility_detailview = (function () {
         var that = this;
         var firstDay = new Date(this.startTime);
         firstDay.setHours(0, 0, 0, 0);
+        var lastDay = new Date(this.endTime);
+        lastDay.setDate(lastDay.getDate() + 1);
 
-        var allDays = d3.time.day.range(firstDay, this.endTime);
+        var allDays = d3.time.day.range(firstDay, lastDay);
         var allMonths = [firstDay].concat(d3.time.month.range(this.startTime, this.endTime))
 
         this.barChart.x.domain(allDays);
@@ -501,12 +531,12 @@ var mobility_detailview = (function () {
             .attr("id", function(d,i) {return "weekTextPath-" + i});
         
         dayCircles.append("text")
+            .style("opacity", 0.55)
             .attr("class", "nohover")
             .append("textPath")
             .attr("xlink:href", function (d, i) { return "#weekTextPath-" + i })
             .text(function (d) { return d.day })
             .style("fill", "black")
-            .style("opacity", 0.55)
             .style("font-size", "11px");
 
         var hourLabels = radialChart.selectAll(".hourLabel").data(this.data.buckets[0].timeBucket).enter();
@@ -595,11 +625,11 @@ var mobility_detailview = (function () {
 
         todWheel.append("text")
             .attr("class", "nohover")
+            .style("opacity", 0.55)
             .append("textPath")
             .attr("xlink:href", function (d, i) { return "#todTextPath-" + i })
             .text(function (d) { return d.label })
             .style("fill", "black")
-            .style("opacity", 0.55)
             .style("font-size", "11px");
 
 
@@ -650,18 +680,24 @@ var mobility_detailview = (function () {
             });
 
         switchBtnGrp.append("rect")
-            .attr("x", -2.5)
-            .attr("y", -2.5)
-            .attr("width", 20)
-            .attr("height", 20)
-           .attr("class", "tile");
+            .attr("x", 30)
+            .attr("y", 10)
+            .attr("width", 25)
+            .attr("height", 25)
+            .style("opacity", 0);
 
-        switchBtnGrp.append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", 15)
-            .attr("height", 15)
-            .style("fill", "#eeeeee");
+        switchBtnGrp.append("svg:image")
+            .attr("xlink:href", "data/arrow.png")
+            .attr("width", 25)
+            .attr("height", 25)
+            .attr("x", 30)
+            .attr("y", 10);
+            //append("rect")
+            //.attr("x", 0)
+            //.attr("y", 0)
+            //.attr("width", 15)
+            //.attr("height", 15)
+            //.style("fill", "#eeeeee");
 
         var hoverText = radialChartsGrp.append("text")
             .attr("id", "radialHoverText")
@@ -675,7 +711,7 @@ var mobility_detailview = (function () {
 
         var gradient = scaleGrp.append("linearGradient")
             .attr("y1", 0)
-            .attr("y2", 260)
+            .attr("y2", 230)
             .attr("x1", 0)
             .attr("x2", 0)
             .attr("id", "radialGradient")
@@ -696,7 +732,7 @@ var mobility_detailview = (function () {
             .attr("x", 10)
             .attr("y", 15)
             .attr("width", 4)
-            .attr("height", 260)
+            .attr("height", 230)
             .attr("fill", "url(#radialGradient)");
 
         scaleGrp.append("text")
@@ -707,7 +743,7 @@ var mobility_detailview = (function () {
 
         scaleGrp.append("text")
             .attr("x", 3)
-            .attr("y", 290)
+            .attr("y", 260)
             .text("Less")
             .style("font-size", "11px");
 
@@ -717,13 +753,13 @@ var mobility_detailview = (function () {
             .text("Visits distribution")
             .style("font-size", "18px");
 
-        switchBtnGrp.attr("transform", "translate(20," + (this.height - 350) + ")");
-        radialChart.attr("transform", "translate(175," + (this.height - 200) + ")");
-        radialChart2.attr("transform", "translate(175," + (this.height - 200) + ")")
+        switchBtnGrp.attr("transform", "translate(400," + (this.height - 630) + ")");
+        radialChart.attr("transform", "translate(555," + (this.height - 500) + ")");
+        radialChart2.attr("transform", "translate(555," + (this.height - 500) + ")")
             .style("visibility", "hidden");
-        hoverText.attr("transform", "translate(20," + (this.height - 30) + ")");
-        scaleGrp.attr("transform", "translate(330," + +(this.height - 345) + ")");
-        titleText.attr("transform", "translate(120," + +(this.height - 370) + ")");
+        hoverText.attr("transform", "translate(480," + (this.height - 350) + ")");
+        scaleGrp.attr("transform", "translate(700," + +(this.height - 635) + ")");
+        titleText.attr("transform", "translate(490," + +(this.height - 640) + ")");
 
         
     };
@@ -754,10 +790,16 @@ var mobility_detailview = (function () {
                     .attr("fill", function (e, j) { return that.radialColorScale(that.data.sumBuckets(j, d.from, d.to)) })
             });
 
-        var texts = ["Location ID: " + this.data.id,
-                     "Visits: " + this.data.count,
-                     "Total time spent: " + this.formatTime(this.data.time),
-                     "Average time spent: " + Math.round(this.data.avgTime * 100) / 100 + "h"];
+        var textsValues = [this.data.count,
+                           this.formatTime(this.data.time),
+                           Math.round(this.data.avgTime * 100) / 100 + "h"];
+
+
+        var format = d3.time.format("%a %d %B %Y %X");
+        for (var i = this.data.visits.length - 1;
+            i >= 0 && i > this.data.visits.length - 4; i--) {
+            textsValues = textsValues.concat([format(new Date(this.data.visits[i].start))]);
+        }
 
         // Update the bar chart
         if (this.barChart.grp != null) {
@@ -765,11 +807,20 @@ var mobility_detailview = (function () {
             this.endTime = end;
             this.updateBarChart();
         }
-        
+        d3.selectAll(".textValue").remove();
 
-        d3.select("#tooltipInfo")
-            .selectAll("tspan").data(texts)
+
+
+        d3.select("#tooltipInfo").append("text")
+            .attr("y", 26 + 48)
+            .selectAll("tspan").data(textsValues).enter()
+            .append("tspan")
+            .attr("class", "textValue")
+            .attr("dy", 26)
+            .attr("x", 147)
             .text(function (t) { return t; });
+
+       
     };
     
     mobility_detailview.prototype.formatTime = function (time) {

@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="css\style.css" />
+    <Content Include="data\arrow.png" />
     <Content Include="index.html" />
     <Content Include="lib\angular\angular.min.js" />
     <Content Include="lib\clusterfck\clusterfck-0.1.js" />

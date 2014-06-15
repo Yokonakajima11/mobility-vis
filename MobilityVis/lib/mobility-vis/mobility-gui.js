@@ -384,16 +384,16 @@ var mobility_gui = (function () {
         var that = this;
         var grp = this.parent.append("g")
             .attr("class", "detailFrame")
-            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200)  + ", " + document.getElementById(this.parentId).offsetHeight + ")");
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 750 - 110)  + ", " + document.getElementById(this.parentId).offsetHeight + ")");
 
         this.blockGui();
         grp.transition()
             .duration(500)
             .ease("linear")
-            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth / 2 - 200) + ", 10)");
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 750 - 110) + ", 10)");
         var closeFun = function () { that.visRef.hideDetails() };
-        this.currentDetailView = new mobility_detailview(grp, data, document.getElementById(this.parentId).offsetWidth / 2 - 110 + 200,
-            550, this.visRef.startTime, this.visRef.endTime, closeFun);
+        this.currentDetailView = new mobility_detailview(grp, data, 750,
+            720, this.visRef.startTime, this.visRef.endTime, closeFun);
     };
 
     mobility_gui.prototype.hideDetailFrame = function () {
@@ -474,6 +474,10 @@ var mobility_gui = (function () {
 
         this.parent.selectAll(".copyrightBox")
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
+
+        this.parent.selectAll(".detailFrame")
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 750 - 110) + ", 10)");
+
 
         if (this.currentDetailView != null)
             this.currentDetailView.update(start, end);

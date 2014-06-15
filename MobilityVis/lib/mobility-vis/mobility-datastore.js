@@ -46,7 +46,10 @@ var mobility_datastore = (function () {
             storage.endTime = storage.data.time[storage.data.time.length - 1].end;
 
             //Notify the visualization that the data is ready
-            var event = new CustomEvent("dataReady", { detail: { startTime: storage.startTime, endTime: storage.endTime }});         
+            var event = new Event("dataReady");         
+
+
+            //var event = document.createEvent("dataReady");
             dispatchEvent(event);
         });
 
@@ -262,8 +265,10 @@ var mobility_datastore = (function () {
                 var ourNbs = neighbours(toDo[i].point.id);
 
                 for (var j = 0; j < ourNbs.length; j++) {
-                    if (visited.indexOf(ourNbs[j].id) == -1) {                        
-                        var newChild = { point: ourNbs[j], children: [] };
+                    if (visited.indexOf(ourNbs[j].id) == -1) {
+                        var score = findConn(toDo[i].point.id, ourNbs[j].id);
+
+                        var newChild = { point: ourNbs[j], children: [], strengthToParent: score };
                         toDo[i].children.push(newChild);
                         newToDo.push(newChild);
                         visited.push(ourNbs[j].id);
@@ -283,6 +288,19 @@ var mobility_datastore = (function () {
                     result.push(storage.data.locDict[storage.data.connections[i].from]);
             };
             return result;
+        };
+
+        function findConn(parent, child) {
+            var score = 0;
+            for (var i = 0; i < storage.data.connections.length; i++) {
+                if ((storage.data.connections[i].from == parent &&
+                    storage.data.connections[i].to == child) ||
+                    (storage.data.connections[i].from == child &&
+                    storage.data.connections[i].to == parent))
+                    score += storage.data.connections[i].score;
+            }
+            return score;
+
         };
 
         return graph;

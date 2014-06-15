@@ -131,8 +131,8 @@ var mobility_map = (function () {
         addEventListener("dataReady", function (e) {         
              //Data has been loaded - initialize 
             chart.data = dataStore.data; 
-            chart.startTime = e.detail.startTime;
-            chart.endTime = e.detail.endTime;
+            chart.startTime = dataStore.startTime;
+            chart.endTime = dataStore.endTime;
             chart.timelineRef = new mobility_timeline(chart.timelineLayer, chart, chart.data.time[0].start, chart.data.time[chart.data.time.length - 1].end, chart.startTime);           
             chart.map.center({ lat: lat, lon: long });
             chart.gui.blockGui();            
