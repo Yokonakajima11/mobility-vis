@@ -83,6 +83,11 @@ text {
         font-variant: normal;
     }
 
+    text.helpText {
+        font-size: 20px;
+        opacity: 0;
+        text-anchor: start;
+    }
 
     text.scaleText {
         font-size: 12px;

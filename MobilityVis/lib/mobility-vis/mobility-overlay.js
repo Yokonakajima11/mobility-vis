@@ -59,6 +59,8 @@ var mobility_overlay = (function () {
         this.dataStore = dataStore;
         /// <field name="mapRef" type="mobility_map">Reference to big map visualization</field>
         this.mapRef = null;
+        /// <field name="helpRef" type="mobility_help">Reference to the help</field>
+        this.helpRef = null;
 
         /*--------------------------------------  Layout    ------------------------------------------*/
         /// <field name="calendarPos" type="Number">Current translation of the calendar</field>
@@ -67,8 +69,9 @@ var mobility_overlay = (function () {
         this.colorScale = d3.scale.ordinal().range(["#E80C7A", "#9AD954", "#8047C3", "#FF9A54", "#FFE73D"]);
         //this.colorScale = d3.scale.ordinal().range(["#C9313D", "#F9722E", "#CDD452", "#375D81", "#183152"]);
         /// <field name="linkScale" type="d3.scale">The scale for thickness of links</field>
-        this.linkScale = d3.scale.linear().range([1, 5]).domain([5, 50]).clamp(true);
-        
+        this.linkScale = d3.scale.linear().range([1, 5]).domain([5, 50]).clamp(true);       
+        /// <field name="diameter" type="Number">The diameter of the tree graph</field>
+        this.diameter = 750;
 
         /// <field name="extraColor" type="String">The extra color of the selected point</field>
         this.extraColor = "cyan";
@@ -189,9 +192,41 @@ var mobility_overlay = (function () {
            .attr("y", 10 + 12)
            .text("Exploration mode");
 
+        // Draw the help button
+        var helpButtonGrp = this.visLayer.append("g")
+            .attr("transform", "translate(145,10)")
+            .attr("id", "helpMapBtn")
+            .attr("class", "button")
+            .on("click", function () {
+                return chart.helpRef.startHelpOverlay(true);
+            })
+            .on("mouseover", function () {
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function () {
+                d3.select(this).select("text").style("fill", null);
+            });;
+
+
+        helpButtonGrp.append("rect")
+           .attr({
+               x: 0,
+               y: 0,
+               width: 35,
+               height: 35,
+               "class": "tile"
+           })
+
+        helpButtonGrp.append("text")
+           .attr("x", 15)
+           .attr("y", 10 + 12)
+           .text("?");
+
+
         this.drawTree();
         this.drawCalendar();
-        this.drawInfo();       
+        this.drawInfo();
+        this.drawCopyright();
     };
 
     mobility_overlay.prototype.updateLabels = function () {
@@ -216,17 +251,29 @@ var mobility_overlay = (function () {
     	/// Draw the tree graph.
     	/// </summary>
         var chart = this;
-        var diameter = 750;
         
+        var scale = Math.min(document.getElementById(this.parentId).offsetWidth / 1300, document.getElementById(this.parentId).offsetHeight / 740);
+        if (scale < 1) scale = 1;
 
         this.tree = d3.layout.tree()
-            .size([360, diameter / 2 - 120])
+            .size([360, this.diameter / 2 - 120])
             .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });      
 
         var svg = this.visLayer
             .append("g")
-            .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")")
+            .attr("transform", "translate(" + ((this.diameter / 2) * scale) + "," + ((this.diameter / 2) * scale) + ") scale(" + scale + ")")
             .attr("id", "treeGrp");
+
+        this.visLayer.append("text")
+            .text("Connected locations")
+            .attr({
+                id: "treeTxt",
+                transform: "translate(" + ((this.diameter / 2) * scale - 10*7) + ",40)"
+            })
+            .style({
+                "font-size": "24px",
+                "fill": "#333"
+            });
 
         var nodes = this.tree.nodes(this.graphData),
             links = this.tree.links(nodes);
@@ -876,30 +923,54 @@ var mobility_overlay = (function () {
         d3.select("#infoLayer")
            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 570) + ",10)");
 
+        var scale = Math.min(document.getElementById(this.parentId).offsetWidth / 1300, document.getElementById(this.parentId).offsetHeight / 740);
+        if (scale < 1) scale = 1;
+
+        d3.select("#treeGrp")
+            .attr("transform", "translate(" + ((this.diameter / 2) * scale) + "," + ((this.diameter / 2) * scale) + ") scale(" + scale + ")")
+
+        d3.select("#treeTxt")
+            .attr("transform", "translate(" + ((this.diameter / 2) * scale - 10 * 7) + ",40)");
+
+       this.visLayer.selectAll(".overlayCopyrightBox")
+            .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 720) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
+
     };
 
-    mobility_overlay.prototype.setMapRef = function (ref) {
+    mobility_overlay.prototype.setRefs = function (mapRef,helpRef) {
     	/// <summary>
     	/// Set the map visualization reference.
     	/// </summary>
-    	/// <param name="ref" type="mobility_map">The map visualization reference</param>
-        this.mapRef = ref;
+        /// <param name="mapRef" type="mobility_map">The map visualization reference</param>
+        /// <param name="helpRef" type="mobility_help">The help reference</param>
+        this.mapRef = mapRef;
+        this.helpRef = helpRef;
     };
 
     mobility_overlay.prototype.closeOverlay = function () {
     	/// <summary>
     	/// Close the overlay and move to the map visualization.
-    	/// </summary>
+        /// </summary>
+        if (this.helpRef.helpOn)
+            return;
+
         var chart = this;        
         var once = false;
 
         this.visLayer.select("#exploreBtn")
             .attr("visibility", "hidden");
 
+        this.visLayer.select("#treeTxt")
+           .style("visibility", "hidden");
+
+        this.visLayer.select("#helpMapBtn")
+            .style("visibility", "hidden");
+
         // First move the info box away
         this.visLayer.select("#infoLayer")
             .transition()
-            .attr("transform", "translate(1900)")
+            .duration(500)
+            .attr("transform", "translate(5000)")
             .each("end", function () {
                 // Then get rid of the background, links and node labels
                 chart.visLayer.selectAll("#background")
@@ -965,9 +1036,10 @@ var mobility_overlay = (function () {
     mobility_overlay.prototype.reopenOverlay = function () {
     	/// <summary>
     	/// Re-open the overlay with the simple view, covering the map.
-    	/// </summary>
-        var diameter = 750;
+    	/// </summary>     
         var chart = this;
+        var scale = Math.min(document.getElementById(this.parentId).offsetWidth / 1300, document.getElementById(this.parentId).offsetHeight / 740);
+        if (scale < 1) scale = 1;
 
         if ($.mlog)
             $.mlog.logEvent("overlayOpened");
@@ -978,7 +1050,14 @@ var mobility_overlay = (function () {
         this.visLayer.select("#treeGrp")
                     .transition()
                     .duration(1000)
-            .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")")
+            .attr("transform", "translate(" + ((this.diameter / 2) * scale) + "," + ((this.diameter / 2) * scale) + ") scale(" + scale + ")")
+
+        d3.select("#treeTxt")
+            .attr("transform", "translate(" + ((this.diameter / 2) * scale - 10 * 7) + ",40)")
+            .style("visibility", "visible");
+
+        d3.select("#helpMapBtn")
+            .style("visibility", "visible");
 
         this.visLayer.select("#treeGrp").selectAll("circle")
             .attr("r", function (d) {
@@ -1006,13 +1085,40 @@ var mobility_overlay = (function () {
                     .style("opacity", 1)
                     .each("end", function() {
                         chart.visLayer.select("#infoLayer")
-                         .transition()
-                         .attr("transform", "translate(" + (document.getElementById(chart.parentId).offsetWidth - 570) + ",10)");
+                            .transition()
+                            .duration(500)
+                            .attr("transform", "translate(" + (document.getElementById(chart.parentId).offsetWidth - 570) + ",10)");
                     });
 
         this.graphData = this.dataStore.makeGraph();
         this.updateTree(this.graphData);
     };
+
+    mobility_overlay.prototype.drawCopyright = function () {
+        /// <summary>
+        /// Draw the copyright box
+        /// </summary>
+        var copGrp = this.visLayer.append("g").attr("class", "overlayCopyrightBox");
+
+        var text = copGrp
+        .append("text")
+        .attr("x", 5)
+        .attr("y", 10)
+        .attr("class", "copyright")
+        .style("font-size", "9px");
+
+        text.append("a")
+        .attr("xlink:href", "http://www.openstreetmap.org/copyright")
+            .append("tspan")
+        .text("© OpenStreetMap ");
+
+        text.append("tspan")
+        .text("contributors");
+
+        copGrp.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 720) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
+    };
+
+
 
     return mobility_overlay;
 

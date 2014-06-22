@@ -12,6 +12,7 @@
     <script src="lib/mobility-vis/mobility-gui.js"></script>
     <script src="lib/mobility-vis/mobility-detailview.js"></script>
     <script src="lib/mobility-vis/mobility-point.js"></script>
+    <script src="lib/mobility-vis/mobility-help.js"></script>
     <script src="lib/jquery/jquery.min.js"></script>
     <script src="lib/jquery/jquery.cookie-1.4.1.min.js"></script>
     <script src="lib/clusterfck/clusterfck-0.1.js"></script>
@@ -33,8 +34,9 @@
             
             mmap = new mobility_map("vismap", 55.751849, 12.535186, mdata);
             moverlay = new mobility_overlay("vismap", mdata);
-            moverlay.setMapRef(mmap);
-            mmap.setOverlayRef(moverlay);
+            mhelp = new mobility_help("vismap", moverlay);
+            moverlay.setRefs(mmap, mhelp);
+            mmap.setRefs(moverlay, mhelp);
 
 
            // addEventListener("overlayClosed", function () { delete moverlay});
@@ -42,6 +44,7 @@
             $(window).resize(function () {
                     mmap.redraw();
                     moverlay.redraw();
+                    mhelp.redraw();
             });
         })
     </script>

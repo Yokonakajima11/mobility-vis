@@ -5,6 +5,7 @@
 /// <reference path="mobility-point.js" />
 /// <reference path="mobility-gui.js" />
 /// <reference path="mobility-datastore.js" />
+/// <reference path="mobility-help.js" />
 ///
 /// ======================================================================================================
 /// File: MOBILITY-MAP.js
@@ -27,7 +28,7 @@ var mobility_map = (function () {
         var chart = this;
 
         /*-----------------------------------------  Layers    ---------------------------------------*/
-        /// <field name="vis" type="String">Parent container ID</field>
+        /// <field name="parentId" type="String">Parent container ID</field>
         this.parentId = divId;                                                                                  
         /// <field name="vis" type="d3.selection">Main SVG </field>
         if (d3.select("svg").empty())
@@ -48,6 +49,8 @@ var mobility_map = (function () {
         /*---------------------------------------  References    --------------------------------------*/
         /// <field name="overlayRef" type="mobility_overlay">Reference to data storage</field>
         this.overlayRef = null;
+        /// <field name="helpRef" type="mobility_help">Reference to the help</field>
+        this.helpRef = null;
         /// <field name="timelineRef" type="mobility_timeline">Reference to data storage</field>
         this.timelineRef = null;
         /// <field name="gui" type="mobility_gui">Reference to the GUI layer object</field>
@@ -165,6 +168,7 @@ var mobility_map = (function () {
             $.mlog.logEvent("mapOpened");
 
         this.updateTimeEnd();
+        this.helpRef.startHelpMap();
     };
 
     /*-----------------------------------------  Data methods    --------------------------------------*/
@@ -397,6 +401,7 @@ var mobility_map = (function () {
     	/// <param name="parent">Parent container of the GUI layer</param>
         this.timelineLayer = this.guiLayer.append("svg:g")
             .attr("class", "timeline")
+            .attr("id", "timelineLayer")
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 40) + ",10)");
 
         this.gui = new mobility_gui(this.guiLayer, this);
@@ -692,12 +697,14 @@ var mobility_map = (function () {
         this.gui.unblockGui();
     };
 
-    mobility_map.prototype.setOverlayRef = function (ref) {
+    mobility_map.prototype.setRefs = function (overlayRef, helpRef) {
     	/// <summary>
     	/// Set the overlay layer reference
     	/// </summary>
-    	/// <param name="ref" type="mobility-overlay"></param>
-        this.overlayRef = ref;
+        /// <param name="overlayRef" type="mobility_overlay">The overlay reference</param>
+        /// <param name="helpRef" type="mobility_help">The help reference</param>
+        this.overlayRef = overlayRef;
+        this.helpRef = helpRef;
     };
 
     mobility_map.prototype.reopenOverlay = function () {

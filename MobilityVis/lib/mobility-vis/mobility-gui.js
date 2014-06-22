@@ -347,6 +347,38 @@ var mobility_gui = (function () {
            .attr("x", 30)
            .attr("y", 10 + 12)
            .text("Simple mode");
+
+        // Draw the help button
+        var helpButtonGrp = this.parent.append("g")
+            .attr("transform", "translate(145,10)")
+            .attr("id", "helpMapBtn")
+            .attr("class", "button")
+            .on("click", function () {
+                return that.visRef.helpRef.startHelpMap(true);
+            })
+            .on("mouseover", function () {
+                d3.select(this).select("text").style("fill", "#FFFFFF");
+            })
+            .on("mouseout", function () {
+                d3.select(this).select("text").style("fill", null);
+            });;
+
+
+        helpButtonGrp.append("rect")
+           .attr({
+               x: 0,
+               y: 0,
+               width: 35,
+               height: 35,
+               "class": "tile"
+           })
+
+        helpButtonGrp.append("text")
+           .attr("x", 15)
+           .attr("y", 10 + 12)
+           .text("?");
+
+
     };
 
     mobility_gui.prototype.openFilterMenu = function () {
