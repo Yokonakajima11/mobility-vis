@@ -361,9 +361,9 @@ var mobility_gui = (function () {
             })
             .on("mouseout", function () {
                 d3.select(this).select("text").style("fill", null);
-            });;
+            });
 
-
+        
         helpButtonGrp.append("rect")
            .attr({
                x: 0,
@@ -453,7 +453,7 @@ var mobility_gui = (function () {
         var text = copGrp
         .append("text")
         .attr("x", 5)
-        .attr("y", 10)
+        .attr("y", 5)
         .attr("class", "copyright")
         .style("font-size", "9px");
 
@@ -466,6 +466,18 @@ var mobility_gui = (function () {
         .text("contributors");
 
         copGrp.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 140) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
+        var text2 = copGrp
+       .append("text")
+       .attr("x", 5)
+       .attr("y", 15)
+       .attr("class", "copyright")
+       .style("font-size", "9px");
+
+        text2.append("a")
+        .attr("xlink:href", "https://foursquare.com/")
+            .append("tspan")
+        .text("Location names © FourSquare ");
+
     };
 
     /*----------------------------------------  Utility methods    ------------------------------------*/

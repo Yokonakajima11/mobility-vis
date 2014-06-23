@@ -71,7 +71,7 @@ var mobility_overlay = (function () {
         /// <field name="linkScale" type="d3.scale">The scale for thickness of links</field>
         this.linkScale = d3.scale.linear().range([1, 5]).domain([5, 50]).clamp(true);       
         /// <field name="diameter" type="Number">The diameter of the tree graph</field>
-        this.diameter = 750;
+        this.diameter = 610;
 
         /// <field name="extraColor" type="String">The extra color of the selected point</field>
         this.extraColor = "cyan";
@@ -237,7 +237,7 @@ var mobility_overlay = (function () {
         this.visLayer.selectAll(".node")
             .selectAll("text")           
             .text(function (d) {
-                return d.point.locationName.substr(0, 16) + (((d.point.locationName.length) > 16) ? "..." : "");
+                return d.point.locationName.substr(0, 7) + (((d.point.locationName.length) > 7) ? "..." : "");
             });
 
         this.visLayer.select(".info").remove();
@@ -962,6 +962,9 @@ var mobility_overlay = (function () {
 
         this.visLayer.select("#treeTxt")
            .style("visibility", "hidden");
+        this.visLayer.select(".overlayCopyrightBox")
+          .style("visibility", "hidden");
+
 
         this.visLayer.select("#helpMapBtn")
             .style("visibility", "hidden");
@@ -1058,6 +1061,8 @@ var mobility_overlay = (function () {
 
         d3.select("#helpMapBtn")
             .style("visibility", "visible");
+        this.visLayer.select(".overlayCopyrightBox")
+          .style("visibility", "visible");
 
         this.visLayer.select("#treeGrp").selectAll("circle")
             .attr("r", function (d) {
@@ -1103,7 +1108,7 @@ var mobility_overlay = (function () {
         var text = copGrp
         .append("text")
         .attr("x", 5)
-        .attr("y", 10)
+        .attr("y", 5)
         .attr("class", "copyright")
         .style("font-size", "9px");
 
@@ -1116,6 +1121,21 @@ var mobility_overlay = (function () {
         .text("contributors");
 
         copGrp.attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 720) + "," + (document.getElementById(this.parentId).offsetHeight - 25) + ")");
+
+        var text2 = copGrp
+        .append("text")
+        .attr("x", 5)
+        .attr("y", 15)
+        .attr("class", "copyright")
+        .style("font-size", "9px");
+
+        text2.append("a")
+        .attr("xlink:href", "https://foursquare.com/")
+            .append("tspan")
+        .text("Location names © FourSquare ");
+
+       
+
     };
 
 

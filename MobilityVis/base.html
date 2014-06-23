@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+{% load bootstrap_toolkit %}
+{% load staticfiles %}
+<html lang="en" ng-app="sensibleApp">
+<head>
+	<noscript>
+		<meta http-equiv="refresh" content="0; url={% url "noscript" %}" />
+	</noscript>
+    <meta charset="utf-8">
+    <title>SensibleExplorer</title>
+    <meta name="description" content="">
+    <meta name="author" content="Andrea Cuttone">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE-edge" />
+    <script>
+    	try {
+    		NodeList;
+    		HTMLCollection;
+    	} catch (err) {
+		window.location = "{% url "changebrowser" %}";
+    	}
+    </script>
+    <style type="text/css">
+        body {
+            padding-top: 60px;
+        }
+    </style>
+    {% bootstrap_stylesheet_tag %}
+    {% bootstrap_stylesheet_tag "responsive" %}
+    <!--[if lt IE 9]>
+    <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+	
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+
+	<!-- <script src="{{STATIC_URL}}angular/lib/d3.v3.min.js"></script>
+	<script src="{{STATIC_URL}}angular/lib/angular.js"></script>
+	<script src="{{STATIC_URL}}angular/lib/ui-bootstrap-tpls-0.4.0.js"></script>  
+	<!-- <script src="lib/angular-resource.js"></script>
+	<script src="{{STATIC_URL}}angular/lib/polymaps.min.js"></script>
+	<script src="{{STATIC_URL}}angular/lib/spin.min.js"></script>
+    <link type="text/css" href="{{STATIC_URL}}angular/css/style.css" rel="stylesheet" >
+    <link type="text/css" href="{{STATIC_URL}}angular/css/polymaps.css" rel="stylesheet" >
+	-->
+  	
+  	<link type="text/css" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/themes/redmond/jquery-ui.css" rel="stylesheet" >
+
+    {% bootstrap_javascript_tag %}
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+
+<div class="navbar navbar-fixed-top">
+
+	
+    <div class="navbar-inner">
+        <div class="container">
+
+			<button style="color:#000000" type="button" class="btn btn-navbar btn-primary" data-toggle="collapse" data-target=".nav-collapse">
+				    <i class="icon-tasks"></i> Menu
+					          </button>
+            <a class="brand" href="#">SensibleExplorer</a>
+	{% if user.is_authenticated %}
+	<div class="nav-collapse collapse">
+		            <ul class="nav">
+		<li {% if request.path == '/andrea/apps/sensible_explorer/mymovements' %} class="active"{% endif %}><a href="{% url 'mymovements' %}" class="">My Movements</a></li>
+	</ul>
+	</div>
+	<ul class="nav pull-right action">
+		  <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+		<i class="icon-user icon-white"></i>
+			{% if user.first_name != '' %}
+		    {{ user.first_name }}
+			{% else %}
+			My Profile
+			{% endif %}
+		    <span class="caret"></span>
+		  </a>
+		  <ul class="dropdown-menu">
+			  {% if not user.first_name %}
+			  <li><a href="{% url 'request_attributes' %}"><i class="icon-user"></i> Set my name</a></li>
+			{% endif %}
+			  <li><a href="{% url 'logout' %}"><i class="icon-road"></i> Logout</a></li>
+		  </ul>
+	{% else %}
+	<div class="nav-collapse collapse">
+		            <ul class="nav">
+		<li class="divider-vertical"></li>
+	<li><a href="{% url 'quit' %}" class=""><i class="icon-remove"></i> Quit</a></li>
+	<li class="divider-vertical"></li>
+	</ul>
+	</div>
+	<ul class="nav pull-right action">
+	{% endif %}
+      </ul>
+
+
+
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+	{% bootstrap_messages %}
+
+	{% block content %}Empty page{% endblock %}
+
+	<p><hr></p>
+
+	<footer class="row">
+	<div class="span12">
+		<span>This is <a href="https://github.com/MIT-Model-Open-Data-and-Identity-System/SensibleData-Apps-SensibleExplorer">SensibleExplorer</a>
+		<span class="label label-important">0.1.0</span>
+		</span>&bull;
+		<span>&copy; <a href="https://raw.github.com/MIT-Model-Open-Data-and-Identity-System/SensibleData-Service/master/sensible_data_service/documents/legal_notices">Technical University of Denmark</a> 2013|
+		<a href="https://raw.github.com/MIT-Model-Open-Data-and-Identity-System/SensibleData-Platform/master/LICENSE">software license</a>
+		</span>
+	</div>
+
+	<div class="span">
+		<span><a rel="license" href="https://creativecommons.org/licenses/by/3.0/deed.en_US"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/3.0/80x15.png" /></a> <span xmlns:dct="https://purl.org/dc/terms/" property="dct:title"></span><a rel="license" href="https://creativecommons.org/licenses/by/3.0/deed.en_US">Creative Commons Attribution 3.0 Unported License</a> </span>
+		&bull;
+		<span> © <a rel="license" href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></span>
+	</div>	
+
+
+	</footer>
+
+</div> <!-- container -->
+
+</body>
+</html>

@@ -687,7 +687,7 @@ var mobility_detailview = (function () {
             .style("opacity", 0);
 
         switchBtnGrp.append("svg:image")
-            .attr("xlink:href", "data/arrow.png")
+            .attr("xlink:href", ICON_URL)
             .attr("width", 25)
             .attr("height", 25)
             .attr("x", 30)

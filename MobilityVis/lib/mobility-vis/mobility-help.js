@@ -61,14 +61,6 @@ var mobility_help = (function () {
             "This button takes you back to the simple mode."
         ];
 
-
-        var that = this;
-        addEventListener("dataReady", function (e) {            
-            if (initialView instanceof mobility_overlay)
-                that.startHelpOverlay();
-            else if (initialView instanceof mobility_map)
-                that.startHelpMap();
-        });
         
     };
 
@@ -302,7 +294,6 @@ var mobility_help = (function () {
           .attr({
               transform: function (d) { return d; },
               id: function (d, i) {
-                  console.log(i);
                   return "helpTxt" + i;
               },
               "class": "helpText"
