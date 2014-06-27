@@ -43,15 +43,15 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="base.html" />
     <Content Include="css\style.css" />
     <Content Include="data\arrow.png" />
     <Content Include="index.html" />
-    <Content Include="lib\angular\angular.min.js" />
-    <Content Include="lib\clusterfck\clusterfck-0.1.js" />
     <Content Include="lib\d3.v3\d3.v3.js" />
     <Content Include="lib\d3.v3\d3.v3.min.js" />
     <Content Include="lib\jquery\jquery.cookie-1.4.1.min.js" />
     <Content Include="lib\jStorage\jstorage.min.js" />
+    <Content Include="lib\mobility-vis\mobility-help.js" />
     <Content Include="lib\mobility-vis\mobility-log.js" />
     <Content Include="lib\mobility-vis\mobility-datastore.js" />
     <Content Include="lib\mobility-vis\mobility-overlay.js" />
@@ -177,6 +177,7 @@
     <Content Include="lib\polymaps\src\Transform.js" />
     <Content Include="lib\polymaps\src\Url.js" />
     <Content Include="lib\polymaps\src\Wheel.js" />
+    <Content Include="mymovements.html" />
     <Content Include="web.config">
       <SubType>Designer</SubType>
     </Content>

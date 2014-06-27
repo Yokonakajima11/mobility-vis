@@ -41,6 +41,9 @@ var mobility_point = (function () {
         this.filtered = true;
         /// <field name="locationName" type="String">String with the looked-up location name</field>
         this.locationName = "Unknown location";
+        /// <field name="inTop" type="Boolean">Whether the point is amongst top N points (N decided in the datastore)</field>
+        this.inTop = false;
+
         /// <field name="venue" type="Object">The venue object as read from FourSquare</field>
         this.venue = null;
     };

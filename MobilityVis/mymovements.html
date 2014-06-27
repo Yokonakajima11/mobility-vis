@@ -32,6 +32,11 @@
         }
 
         function uploadUsage() {
+            console.log( {
+                'bearer_token': '{{ token_loc }}',
+                'appid': 'sensibleexplorer',
+                'events': '[[10000, "test123"]]'
+            });
             $.ajax({
                 url: "http://raman.imm.dtu.dk:8083/andrea/sensible-dtu/connectors/connector_funf/usage/",
                 type: "POST",
@@ -66,8 +71,10 @@
          $(document).ready(function () {
              po = org.polymaps;
 
-             $.mlog = new mobility_log("FAKE URL");
-             mdata = new mobility_datastore("{{STATIC_URL}}data/newdata.csv");
+             $.mlog = new mobility_log("http://raman.imm.dtu.dk:8083/andrea/sensible-dtu/connectors/connector_funf/usage/",
+                 '{{ token_loc }}');
+             mdata = new mobility_datastore("http://raman.imm.dtu.dk:8083/andrea/sensible-dtu/connectors/connector_answer/v1/stops_question/stops_answer/",
+                                                { 'bearer_token': '{{ token_loc }}'});
              
 
              mmap = new mobility_map("vismap", 55.751849, 12.535186, mdata);

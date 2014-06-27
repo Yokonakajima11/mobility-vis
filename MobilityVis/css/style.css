@@ -5,12 +5,16 @@
   margin: 0;
 }
 
+.container {
+    width: 1300px;
+}
+
 #svg-container {
     margin-top:50px;
 }
 
  #svg-container, #vismap {
-    min-width: 1170px;
+    min-width: 1300px;
     min-height: 740px;
     width: 100%;
     height: 100%;

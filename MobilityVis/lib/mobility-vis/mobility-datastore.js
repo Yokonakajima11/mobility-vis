@@ -14,11 +14,12 @@
 
 var mobility_datastore = (function () {
 
-    function mobility_datastore(dataUrl) {
-    	/// <summary>
-    	/// Constructor for the mobility-datastore object
-    	/// </summary>
+    function mobility_datastore(dataUrl, dataObject) {
+        /// <summary>
+        /// Constructor for the mobility-datastore object
+        /// </summary>
         /// <param name="dataUrl">URL from where to fetch data as a JSON object</param>
+        /// <param name="dataObject">Data object to submit in the request</param>
         var storage = this;
 
         /*----------------------------------------  Data    ------------------------------------------*/
@@ -37,21 +38,27 @@ var mobility_datastore = (function () {
         this.startTime = 0;
         /// <field name="endTime" type="Number">Timestamp of the last data point</field>
         this.endTime = 0;
+        /// <field name="topN" type="Number">How many points should fit in a tree</field>
+        this.topN = 100;
 
         /*--------------------------------------  Constructor    -------------------------------------*/
         //Fetch the data from the URL
-        d3.csv(dataUrl, function (data) {
-            storage.data = storage.filterPoints(data);
-            storage.startTime = storage.data.time[0].start;
-            storage.endTime = storage.data.time[storage.data.time.length - 1].end;
+        // d3.csv(dataUrl, function (data) {
+        $.ajax({
+            url: dataUrl,
+            data: dataObject,
+            success: function (response) {
+                storage.data = storage.filterPoints(response);
+                storage.startTime = storage.data.time[0].start;
+                storage.endTime = storage.data.time[storage.data.time.length - 1].end;
 
-            //Notify the visualization that the data is ready
-            var event = new Event("dataReady");         
+                //Notify the visualization that the data is ready
+                var event = new Event("dataReady");
 
 
-            //var event = document.createEvent("dataReady");
-            dispatchEvent(event);
-        });
+                //var event = document.createEvent("dataReady");
+                dispatchEvent(event);
+            }});
 
     };
 
@@ -110,6 +117,8 @@ var mobility_datastore = (function () {
             for (var i = 0; i < this.data.location.length; i++) {
                 if (this.data.location[i].count == 0) break;
                 this.data.location[i].makeAverage();
+                if (i < this.topN)
+                    this.data.location[i].inTop = true;
 
                 slice = i + 1;
             }
@@ -187,11 +196,11 @@ var mobility_datastore = (function () {
         };
         //grouping pois with the same ID
         for (var i = 0; i < data.length; i++) {
-            if (dict[data[i].id] == undefined)
-                dict[data[i].id] = [data[i]];
+            if (dict[data[i].label] == undefined)
+                dict[data[i].label] = [data[i]];
             else
-                dict[data[i].id].push(data[i])
-            timeData.push({ id: data[i].id, start: data[i].arrival * 1000, end: data[i].departure * 1000 });
+                dict[data[i].label].push(data[i])
+            timeData.push({ id: data[i].label, start: data[i].arrival * 1000, end: data[i].departure * 1000 });
         }
         //counting average of pois location
         for (var id in dict) {
@@ -282,9 +291,11 @@ var mobility_datastore = (function () {
         function neighbours(node) {
             var result = [];
             for (var i = 0; i < storage.data.connections.length; i++) {
-                if (storage.data.connections[i].from == node)
+                if (storage.data.connections[i].from == node &&
+                    storage.data.locDict[storage.data.connections[i].to].inTop)
                     result.push(storage.data.locDict[storage.data.connections[i].to]);
-                else if (storage.data.connections[i].to == node)
+                else if (storage.data.connections[i].to == node &&
+                    storage.data.locDict[storage.data.connections[i].from].inTop)
                     result.push(storage.data.locDict[storage.data.connections[i].from]);
             };
             return result;

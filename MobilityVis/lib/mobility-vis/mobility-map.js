@@ -33,7 +33,9 @@ var mobility_map = (function () {
         /// <field name="vis" type="d3.selection">Main SVG </field>
         if (d3.select("svg").empty())
             this.vis = d3.select("#" + divId)
-                .append("svg:svg");
+                .append("svg:svg")
+                .attr("height", "100%")
+                .attr("width", "100%");
         else
             this.vis = d3.select("svg");
         /// <field name="visLayer" type="d3.selection">Visualisation layer</field>
