@@ -119,6 +119,9 @@ var mobility_datastore = (function () {
                 this.data.location[i].makeAverage();
                 if (i < this.topN)
                     this.data.location[i].inTop = true;
+                else
+                    this.data.location[i].inTop = false;
+
 
                 slice = i + 1;
             }
