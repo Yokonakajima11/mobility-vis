@@ -96,13 +96,16 @@ var mobility_help = (function () {
         var items = [
             this.helpLayer.append("use")
                 .attr("xlink:href", "#treeGrp")
-                .style("opacity", 0),
+                .style("opacity", 0)
+                .style("pointer-events", "none"),
             this.helpLayer.append("use")
                 .attr("xlink:href", "#infoLayer")
-                .style("opacity", 0),
+                .style("opacity", 0)
+                .style("pointer-events", "none"),
             this.helpLayer.append("use")
                 .attr("xlink:href", "#exploreBtn")
-                .style("opacity", 0),
+                .style("opacity", 0)
+                .style("pointer-events", "none"),
         ];
 
         var textPositions = [
@@ -263,13 +266,16 @@ var mobility_help = (function () {
         var items = [
            this.helpLayer.append("use")
                .attr("xlink:href", "#timelineLayer")
-               .style("opacity", 0),
+               .style("opacity", 0)
+                .style("pointer-events", "none"),
            this.helpLayer.append("use")
                .attr("xlink:href", "#filterMenu")
-               .style("opacity", 0),
+               .style("opacity", 0)
+                .style("pointer-events", "none"),
            this.helpLayer.append("use")
                .attr("xlink:href", "#modeMenu")
-               .style("opacity", 0),
+               .style("opacity", 0)
+                .style("pointer-events", "none"),
         ];
 
         var textPositions = [

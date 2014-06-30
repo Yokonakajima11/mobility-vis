@@ -109,6 +109,15 @@ var mobility_overlay = (function () {
             .attr("id", "infoLayer")
             .attr("transform", "translate(" + (document.getElementById(this.parentId).offsetWidth - 570) + ",10)");
 
+        addEventListener("noData", function (e) {
+
+            chart.visLayer.append("text")
+                .attr({
+                    x: document.getElementById(this.parentId).offsetWidth / 2 - 20,
+                    y: document.getElementById(this.parentId).offsetHeight / 2,
+                })
+                .text("No data available!");
+        });
 
         addEventListener("dataReady", function (e) {
             if ($.mlog)

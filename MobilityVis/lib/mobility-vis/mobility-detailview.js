@@ -258,8 +258,8 @@ var mobility_detailview = (function () {
             });
 
         var legendPos = legend.selectAll("barLegendPos")
-            .data([ { color: "#e80c7a", text: "Weekdays" },
-                    { color: "#ffffff", text: "Weekends" }])
+            .data([{ cl: "weekdayBar", text: "Weekdays" },
+                    { cl: "weekendBar", text: "Weekends" }])
             .enter()
             .append("g")
             .attr("class", "barLegendPos");
@@ -269,9 +269,9 @@ var mobility_detailview = (function () {
                 x: function (d, i) { return i * 70 },
                 y: 0,
                 width: 10,
-                height: 10
-            })
-            .style("fill", function (d) { return d.color; });
+                height: 10,
+                "class": function (d) { return d.cl; }
+            });
        
         legendPos.append("text")
             .attr({
@@ -327,17 +327,16 @@ var mobility_detailview = (function () {
             );
 
         allBars.enter().append("rect")
-            .style("fill", function (d) {
-                if (d.date.getDay() == 0 || d.date.getDay() == 6)
-                    return "#ffffff";
-                return "#e80c7a";
-            })
             .attr({
                 x: function (d) { return that.barChart.x(d.date); },
                 width: this.barChart.x.rangeBand(),
                 y: this.barChart.height,
                 height: 0,
-                "class": "bar"
+                "class": function (d) {
+                    if (d.date.getDay() == 0 || d.date.getDay() == 6)
+                        return "bar weekendBar";
+                    return "bar weekdayBar";
+                }
             })
             .transition()
             .duration(1000)

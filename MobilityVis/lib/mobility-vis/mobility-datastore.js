@@ -39,7 +39,7 @@ var mobility_datastore = (function () {
         /// <field name="endTime" type="Number">Timestamp of the last data point</field>
         this.endTime = 0;
         /// <field name="topN" type="Number">How many points should fit in a tree</field>
-        this.topN = 100;
+        this.topN = 75;
 
         /*--------------------------------------  Constructor    -------------------------------------*/
         //Fetch the data from the URL
@@ -48,6 +48,11 @@ var mobility_datastore = (function () {
             url: dataUrl,
             data: dataObject,
             success: function (response) {
+                if (response.length == 0) {
+                    var event = new Event("noData");
+                    dispatchEvent(event);
+                    return;
+                }
                 storage.data = storage.filterPoints(response);
                 storage.startTime = storage.data.time[0].start;
                 storage.endTime = storage.data.time[storage.data.time.length - 1].end;
