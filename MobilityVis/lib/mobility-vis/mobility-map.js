@@ -712,7 +712,8 @@ var mobility_map = (function () {
     mobility_map.prototype.reopenOverlay = function () {
     	/// <summary>
     	/// Go back to the simple mode by reopening the overlay
-    	/// </summary>
+        /// </summary>
+
      
         d3.select("#overlayLayer").style("visibility", "visible");
         this.gui.reset();

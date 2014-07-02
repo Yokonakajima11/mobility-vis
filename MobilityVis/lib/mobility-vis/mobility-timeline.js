@@ -359,7 +359,13 @@ var mobility_timeline = (function () {
     mobility_timeline.prototype.reset = function () {
     	/// <summary>
     	/// Reset the timeline (when closing the main map visualization)
-    	/// </summary>
+        /// </summary>
+        if (this.playing) {
+            if ($.mlog)
+                $.mlog.logEvent("timelinePlaybackStopped");
+            this.stopPlaying();
+        }
+
 
         this.currentStartTime = this.startTime;
         this.currentEndTime = this.endTime;
