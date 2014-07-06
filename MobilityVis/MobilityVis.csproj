@@ -204,6 +204,9 @@
     <Content Include="lib\polymaps\README.mkd" />
     <Content Include="data\newdata.csv" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="data\data.json" />
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>

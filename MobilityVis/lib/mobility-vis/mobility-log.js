@@ -42,9 +42,9 @@ var mobility_log = (function () {
 
         var that = this;
 
-        setTimeout(function () {
-            that.submitLogs();
-        }, 1000 * 60 * 5);
+        //setTimeout(function () {
+        //    that.submitLogs();
+        //}, 1000 * 60 * 5);
     };
 
     mobility_log.prototype.logEvent = function (event) {

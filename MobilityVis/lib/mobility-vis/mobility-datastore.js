@@ -44,26 +44,28 @@ var mobility_datastore = (function () {
         /*--------------------------------------  Constructor    -------------------------------------*/
         //Fetch the data from the URL
         // d3.csv(dataUrl, function (data) {
-        $.ajax({
-            url: dataUrl,
-            data: dataObject,
-            success: function (response) {
-                if (response.length == 0) {
-                    var event = new Event("noData");
-                    dispatchEvent(event);
-                    return;
-                }
-                storage.data = storage.filterPoints(response);
-                storage.startTime = storage.data.time[0].start;
-                storage.endTime = storage.data.time[storage.data.time.length - 1].end;
+        //$.ajax({
+        //    url: dataUrl,
+        //    data: dataObject,
+        //    success: function (response) {
 
-                //Notify the visualization that the data is ready
-                var event = new Event("dataReady");
-
-
-                //var event = document.createEvent("dataReady");
+        d3.json("data/data.json", function (error, response) {
+            if (response.length == 0) {
+                var event = new Event("noData");
                 dispatchEvent(event);
-            }});
+                return;
+            }
+            storage.data = storage.filterPoints(response);
+            storage.startTime = storage.data.time[0].start;
+            storage.endTime = storage.data.time[storage.data.time.length - 1].end;
+
+            //Notify the visualization that the data is ready
+            var event = new Event("dataReady");
+
+
+            //var event = document.createEvent("dataReady");
+            dispatchEvent(event);
+        });
 
     };
 
