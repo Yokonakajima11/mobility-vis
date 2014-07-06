@@ -66,13 +66,13 @@ text {
     -ms-user-select: none; 
     user-select: none;
     fill: #eeeeee;
-    font-family: 'Segoe UI';
+    font-family: 'Segoe UI',Helvetica,sans-serif;
     font-variant: small-caps;
     cursor:inherit;
 }
 
     text.darkText {
-        font-family: Helvetica-Normal;
+        font-family: Helvetica, sans-serif;
         font-variant: normal;
         font-size:11px;
         fill: #333;
