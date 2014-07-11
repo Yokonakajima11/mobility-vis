@@ -1139,10 +1139,10 @@ var mobility_overlay = (function () {
         .attr("class", "copyright")
         .style("font-size", "9px");
 
-        text2.append("a")
-        .attr("xlink:href", "https://foursquare.com/")
-            .append("tspan")
-        .text("Location names © FourSquare ");
+        //text2.append("a")
+        //.attr("xlink:href", "https://foursquare.com/")
+        //    .append("tspan")
+        //.text("Location names © FourSquare ");
 
        
 

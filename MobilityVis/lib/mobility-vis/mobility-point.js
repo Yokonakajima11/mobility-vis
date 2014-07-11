@@ -228,25 +228,25 @@ var mobility_point = (function () {
         if ($.jStorage.get("locationCache" + point.id) == null) {
             // If the location data is not present in the cache, look it up
             setTimeout(function () {
-                d3.json("https://api.foursquare.com/v2/venues/search?ll=" + point.lat + "," + point.lon +
-                    "&radius=" + 100 + "&intent=browse&client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&v=20140509",
-                    function (jsonResponse) {
-                        console.log(point.id);
-                        console.log(jsonResponse);
-                        var venues = jsonResponse.response.venues;
-                        for (var i = 0; i < venues.length; i++) {
-                            if (!point.venue || venues[i].stats.checkinsCount > point.venue.stats.checkinsCount)
-                                point.venue = venues[i];
-                        }
+                //d3.json("https://api.foursquare.com/v2/venues/search?ll=" + point.lat + "," + point.lon +
+                //    "&radius=" + 100 + "&intent=browse&client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&v=20140509",
+                //    function (jsonResponse) {
+                //        console.log(point.id);
+                //        console.log(jsonResponse);
+                //        var venues = jsonResponse.response.venues;
+                //        for (var i = 0; i < venues.length; i++) {
+                //            if (!point.venue || venues[i].stats.checkinsCount > point.venue.stats.checkinsCount)
+                //                point.venue = venues[i];
+                //        }
 
-                        if (point.venue) {
-                            point.locationName = point.venue.name;
-                            $.jStorage.set("locationCache" + point.id, point.venue);
-                            var event = new Event("pointLocDataUpdated");
-                            dispatchEvent(event);
-                        }
-                        else {
-                            // If FourSquare knows nothing about the address, get the address from Open Street Map
+                //        if (point.venue) {
+                //            point.locationName = point.venue.name;
+                //            $.jStorage.set("locationCache" + point.id, point.venue);
+                //            var event = new Event("pointLocDataUpdated");
+                //            dispatchEvent(event);
+                //        }
+                //        else {
+                //            // If FourSquare knows nothing about the address, get the address from Open Street Map
                             d3.json("http://nominatim.openstreetmap.org/reverse?format=json&" + 
                                 "lat=" + point.lat + "&lon=" + point.lon ,
                                 function(openData){
@@ -261,9 +261,9 @@ var mobility_point = (function () {
                                         dispatchEvent(event);
                                     }
                                 })
-                        }
+                      //  }
 
-                    })
+                   // })
 
             }, delay);
         }

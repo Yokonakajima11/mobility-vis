@@ -117,6 +117,13 @@ var mobility_gui = (function () {
             .attr("x", function (d, i) { return that.colorScale(d) + 5 })
             .attr("y", 35)
             .attr("class", "scaleText");
+
+        scaleGrp.append("text")
+            .attr("x", 90)
+            .attr("y", 35)
+            .attr("class", "scaleText hourText")
+            .text("hours on average per visit");
+
     };
 
     mobility_gui.prototype.drawScaleTick = function (value) {
@@ -132,11 +139,8 @@ var mobility_gui = (function () {
             .style("fill", "#eeeeee")
             .transition().attr("transform", "translate(" + (5 + this.colorScale(value)) + ",0)")
 
-        this.parent.select(".scale").append("text")
-        .attr("x", 90)
-        .attr("y", 35)
-        .attr("class", "colorScaleTick scaleText")
-        .text(Math.round(value * 100) / 100 + " hours on average per visit");
+        this.parent.select(".hourText")
+            .text(Math.round(value * 100) / 100 + " hours on average per visit");
     };
     
     mobility_gui.prototype.removeScaleTick = function () {
@@ -144,6 +148,9 @@ var mobility_gui = (function () {
     	/// Remove the color scale tick
     	/// </summary>
         this.parent.selectAll(".colorScaleTick").remove();
+
+        this.parent.select(".hourText")
+        .text("hours on average per visit");
     };
 
     /*--------------------------------------  Filter Menu methods    ----------------------------------*/
@@ -473,10 +480,10 @@ var mobility_gui = (function () {
        .attr("class", "copyright")
        .style("font-size", "9px");
 
-        text2.append("a")
-        .attr("xlink:href", "https://foursquare.com/")
-            .append("tspan")
-        .text("Location names © FourSquare ");
+        //text2.append("a")
+        //.attr("xlink:href", "https://foursquare.com/")
+        //    .append("tspan")
+        //.text("Location names © FourSquare ");
 
     };
 
