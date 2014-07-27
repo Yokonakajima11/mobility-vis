@@ -35,9 +35,8 @@ var mobility_log = (function () {
                               "filterEvent",                              
                               "timelineEvent",
                               "timelinePlayback", "timelinePlaybackStopped", "timelinePlaybackEvent",
-                              "mapEvent",
                               "mapDetailOpened", "mapDetailClosed",
-                              "radialChartEvent", "radialChartSwitch", "barChartEvent",
+                              "radialChartSwitch", "barChartEvent",
                               "helpOpened", "helpClosed"];
 
         var that = this;

@@ -507,9 +507,7 @@ var mobility_detailview = (function () {
                             .text(e.count + " " + (e.count==1?"visit":"visits") + " on " + d.day + " at " + (j < 13 ? (j + " am") : ((j - 12) + " pm")));
                     })
                     .on("mouseout", function () {
-                        if (Date.now() - hoverTime > 500 && hoverTime != -1)
-                            if ($.mlog)
-                                $.mlog.logEvent("radialChartEvent");
+                        if (Date.now() - hoverTime > 500 && hoverTime != -1)                            
                         hoverTime = -1;
                         d3.select(this)
                             .transition()

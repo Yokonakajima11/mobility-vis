@@ -463,8 +463,6 @@ var mobility_map = (function () {
                     return "0";
             });
 
-        if ($.mlog)
-            $.mlog.logEvent("mapEvent");
 
         this.gui.drawScaleTick(d.avgTime);
 
