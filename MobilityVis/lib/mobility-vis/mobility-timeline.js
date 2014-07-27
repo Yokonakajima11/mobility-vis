@@ -1,4 +1,5 @@
 ﻿/// <reference path="../polymaps/polymaps.js" />
+/// <reference path="../d3.v3/d3-tip.js" />
 /// <reference path="../d3.v3/d3.v3.js" />
 /// <reference path="../clusterfck/clusterfck-0.1.js" />
 /// <reference path="../jquery/jquery.min.js" />
@@ -66,6 +67,15 @@ var mobility_timeline = (function () {
         /// <field name="updatingTime" type="Boolean">The flag indicating whether the selection is being dragged (but not let go yet)</field>
         this.updatingTime = false;
 
+        this.tip = d3.tip()
+            .attr('class', 'd3-tip-timeline')
+            .offset([0, -20])
+            .direction('w')
+            .html(function (d) {
+                return d;
+            })
+
+
         this.drawTimeline();
     };
 
@@ -89,6 +99,7 @@ var mobility_timeline = (function () {
            .attr("id", "timelineBg")
            .attr("class", "timeline tile");
 
+        this.parent.call(this.tip);
         this.parent.append("line").attr("x1", 15).attr("y1", 10).attr("x2", 15).attr("y2", 490)
             .style("stroke", "#eeeeee").style("stroke-width", "1px");
         var gBrush = this.parent.append("g").call(this.brush);
@@ -122,9 +133,19 @@ var mobility_timeline = (function () {
                 }
             })
             .on("mouseover", function () {
+                if (!that.playing && !that.pause) {
+                    that.tip.show("Play");
+                }
+                else if (that.playing && !that.pause) {
+                    that.tip.show("Pause");
+                }
+                else if (that.playing && that.pause) {
+                    that.tip.show("Resume");
+                }
                 d3.select(this).select("path").style("fill", "#FFFFFF");
             })
             .on("mouseout", function () {
+                that.tip.hide();
                 d3.select(this).select("path").style("fill", null);
             });
 
@@ -216,6 +237,7 @@ var mobility_timeline = (function () {
                     {
                         id: "stopBtn",
                         shape: that.stopShape,
+                        tooltip: "Stop",
                         clickFun: function (theButton) {
                             if ($.mlog)
                                 $.mlog.logEvent("timelinePlaybackStopped");
@@ -226,6 +248,7 @@ var mobility_timeline = (function () {
                     {
                         id: "fastBtn",
                         shape: that.fasterShape,
+                        tooltip: "Faster",
                         clickFun: function (theButton) {
                             if ($.mlog)
                                 $.mlog.logEvent("timelinePlaybackEvent");
@@ -241,6 +264,7 @@ var mobility_timeline = (function () {
                     {
                         id: "slowBtn",
                         shape: that.slowerShape,
+                        tooltip: "Slower",
                         clickFun: function (theButton) {
                             if ($.mlog)
                                 $.mlog.logEvent("timelinePlaybackEvent");
@@ -263,10 +287,12 @@ var mobility_timeline = (function () {
                    .on("click", function (d) {
                        d.clickFun(this);
                    })
-                   .on("mouseover", function () {
+                   .on("mouseover", function (d) {
+                       that.tip.show(d.tooltip);
                        d3.select(this).select("path").style("fill", "#FFFFFF");
                    })
-                   .on("mouseout", function () {
+                   .on("mouseout", function (d) {
+                       that.tip.hide();
                        d3.select(this).select("path").style("fill", null);
                    })
 
@@ -318,6 +344,7 @@ var mobility_timeline = (function () {
         /// </summary>
         this.playing = false;
         this.pause = false;
+        this.tip.hide();
         d3.select("#ticker").remove();
         this.visRef.stopAnimating();
         this.visRef.updateTime(this.currentStartTime, this.currentEndTime);

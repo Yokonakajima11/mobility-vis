@@ -132,6 +132,13 @@ var mobility_map = (function () {
         this.visLayer.append("g").attr("class", "pointLayer");
         this.guiLayer = d3.select("svg").append("svg:g").attr("class", "gui");
         this.drawGui(chart.guiLayer);
+
+        this.tip = d3.tip()
+            .attr('class', 'd3-tip')
+            .offset([-10, 0])
+            .html(function (d) {
+                return d.locationName;
+            })
         
         addEventListener("dataReady", function (e) {         
              //Data has been loaded - initialize 
@@ -228,7 +235,7 @@ var mobility_map = (function () {
         }
         var newMarkers = marker.enter().append("svg:g").attr("class","locationPoint")
              .attr("transform", transform);
-
+        layer.call(this.tip);
         // Add a circle.
         newMarkers.append("svg:circle")
             .attr("class", "location")
@@ -238,9 +245,10 @@ var mobility_map = (function () {
             .style("stroke", "#E80C7A")
             .style("stroke-width", 2)
             .style("cursor", (this.animating)?"default":"pointer")
-            .on("mouseover", function (d) { if(!chart.detailView) chart.hoverDetails(d); })
-            .on("mouseout", function () { if (!chart.detailView) return chart.hideHoverDetails(); })
+            .on("mouseover", function (d) { if (!chart.detailView) chart.hoverDetails(d); return chart.tip.show(d) })
+            .on("mouseout", function () { if (!chart.detailView) chart.hideHoverDetails(); return chart.tip.hide() })
             .on("click", function (d) { if (!chart.animating) return chart.showDetails(d); });
+        
 
         // Animate all the circles
         marker.selectAll("circle").transition()
