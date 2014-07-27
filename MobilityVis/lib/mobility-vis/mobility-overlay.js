@@ -1123,6 +1123,7 @@ var mobility_overlay = (function () {
         .style("font-size", "9px");
 
         text.append("a")
+            .attr("class", "blackUrl")
         .attr("xlink:href", "http://www.openstreetmap.org/copyright")
             .append("tspan")
         .text("© OpenStreetMap ");
