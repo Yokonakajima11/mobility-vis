@@ -1,5 +1,5 @@
-﻿/// <reference path="../jquery/jquery.min.js" />
-/// <reference path="../jquery/jquery.cookie-1.4.1.min.js" />
+﻿/// <reference path="../jquery/jcookie-min.js" />
+/// <reference path="../jquery/jquery.min.js" />
 /// <reference path="../d3.v3/d3.v3.js" />
 /// 
 /// ======================================================================================================
@@ -70,12 +70,12 @@ var mobility_help = (function () {
 
         if ($.mlog)
             $.mlog.logEvent("helpOpened");
-
-        if ($.cookie("overlayHelpVisited") != undefined && force != true)
+        
+        if ($.jCookie("overlayHelpVisited") != undefined && force != true)
             return;
 
         this.helpOn = true;
-        $.cookie("overlayHelpVisited", true);
+        $.jCookie("overlayHelpVisited", true);
 
         d3.select("#treeGrp").selectAll("text")
                    .style("opacity", 0);
@@ -243,11 +243,11 @@ var mobility_help = (function () {
         if ($.mlog)
             $.mlog.logEvent("helpOpened");
 
-        if ($.cookie("mapHelpVisited") != undefined && force != true)
+        if ($.jCookie("mapHelpVisited") != undefined && force != true)
             return;     
 
         this.helpOn = true;
-        $.cookie("mapHelpVisited", true);
+        $.jCookie("mapHelpVisited", true);
 
         this.helpLayer.append("rect")
                     .attr({

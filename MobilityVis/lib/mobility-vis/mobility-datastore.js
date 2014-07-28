@@ -41,6 +41,7 @@ var mobility_datastore = (function () {
         /// <field name="topN" type="Number">How many points should fit in a tree</field>
         this.topN = 75;
 
+       
         /*--------------------------------------  Constructor    -------------------------------------*/
         //Fetch the data from the URL
         // d3.csv(dataUrl, function (data) {

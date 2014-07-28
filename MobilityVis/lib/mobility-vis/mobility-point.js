@@ -6,6 +6,8 @@
 /// </summary>
 /// <author>Marta Magiera</author>
 /// ======================================================================================================
+/// <reference path="../jStorage/jstorage.min.js" />
+/// <reference path="../jquery/jquery.min.js" />
 
 var mobility_point = (function () {
 
@@ -225,7 +227,7 @@ var mobility_point = (function () {
     	/// <param name="delay"></param>
         var point = this;
         
-        if ($.jStorage.get("locationCache" + point.id) == null) {
+        if ($.storage.getItem("locationCache" + point.id, 'sessionStorage') == null) {
             // If the location data is not present in the cache, look it up
             setTimeout(function () {
                 //d3.json("https://api.foursquare.com/v2/venues/search?ll=" + point.lat + "," + point.lon +
@@ -256,7 +258,7 @@ var mobility_point = (function () {
                                         point.locationName = openData.address.road + " ";
                                         if (openData.address.house_number != null)
                                             point.locationName += openData.address.house_number;
-                                        $.jStorage.set("locationCache" + point.id, { name: point.locationName });
+                                        $.storage.setItem("locationCache" + point.id, JSON.stringify({ name: point.locationName }), 'sessionStorage');
                                         var event = new Event("pointLocDataUpdated");
                                         dispatchEvent(event);
                                     }
@@ -269,7 +271,7 @@ var mobility_point = (function () {
         }
         else {
             // Otherwise read from the cache
-            point.venue = $.jStorage.get("locationCache" + point.id);
+            point.venue = $.parseJSON($.storage.getItem("locationCache" + point.id, 'sessionStorage'));
             point.locationName = point.venue.name;
         }
 
