@@ -42,31 +42,40 @@ var mobility_datastore = (function () {
         this.topN = 75;
 
        
+        var rawData = [];
+
         /*--------------------------------------  Constructor    -------------------------------------*/
-        //Fetch the data from the URL
-        // d3.csv(dataUrl, function (data) {
-        $.ajax({
-            url: dataUrl,
-            data: dataObject,
-            success: function (response) {
-                if (response.length == 0) {
-                    var event = new Event("noData");
-                    dispatchEvent(event);
-                    return;
-                }
-                storage.data = storage.filterPoints(response);
-                storage.startTime = storage.data.time[0].start;
-                storage.endTime = storage.data.time[storage.data.time.length - 1].end;
-
-                //Notify the visualization that the data is ready
-                var event = new Event("dataReady");
-
-
-                //var event = document.createEvent("dataReady");
-                dispatchEvent(event);
+        getData = function(page) {
+            console.log('fetching page ' + page);
+            dataObject.page = page;
+            $.ajax({
+                url: dataUrl,
+                data: dataObject,
+                success: function (response) {
+                    if (page === 0 && response.length === 0) {
+                        console.log('no data available');
+                        var event = new Event("noData");
+                        dispatchEvent(event);
+                        return;
+                    }
+                    rawData = $.merge(rawData, response);
+                    if (response.length == dataObject.limit) {
+                        getData(page+1);
+                    } else {
+                        //Notify the visualization that the data is ready
+                        storage.data = storage.filterPoints(rawData);
+                        console.log('fetched ' + rawData.length + ' stops');
+                        storage.startTime = storage.data.time[0].start;
+                        storage.endTime = storage.data.time[storage.data.time.length - 1].end;
+                        var event = new Event("dataReady");
+                        dispatchEvent(event);
+                    }
             }});
+        };
 
-    };
+        getData(0);
+
+    }
 
     /*-----------------------------------------  Data methods    --------------------------------------*/
     mobility_datastore.prototype.updatePoints = function (startTime, endTime, append) {

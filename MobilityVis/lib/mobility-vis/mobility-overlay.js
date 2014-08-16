@@ -93,6 +93,14 @@ var mobility_overlay = (function () {
         /// <field name="infoLayer" type="d3.selection">The info layer, containg the box with calendar and sparklines</field>
         this.infoLayer = null;
 
+        this.tip = d3.tip()
+            .attr('class', 'd3-tip-timeline')
+            .offset([0, 15])
+            .direction('e')
+            .html(function (d) {
+                return d.point.locationName;
+            })
+
         /*--------------------------------------  Constructor    -------------------------------------*/
         this.visLayer = this.vis.append("g").attr("id", "overlayLayer");
         // Draw the background
@@ -113,8 +121,8 @@ var mobility_overlay = (function () {
 
             chart.visLayer.append("text")
                 .attr({
-                    x: document.getElementById(this.parentId).offsetWidth / 2 - 20,
-                    y: document.getElementById(this.parentId).offsetHeight / 2,
+                    x: 20,
+                    y: 20,
                 })
                 .text("No data available!");
         });
@@ -158,7 +166,7 @@ var mobility_overlay = (function () {
                 x: 0,
                 y: 0,
                 width: 560,
-                height: 730,
+                height: 750,
                 id: "infoBg",
                 "class": "tile"        
             });
@@ -272,7 +280,7 @@ var mobility_overlay = (function () {
             .append("g")
             .attr("transform", "translate(" + ((this.diameter / 2) * scale) + "," + ((this.diameter / 2) * scale) + ") scale(" + scale + ")")
             .attr("id", "treeGrp");
-
+        svg.call(this.tip);
         this.visLayer.append("text")
             .text("Connected locations")
             .attr({
@@ -303,6 +311,7 @@ var mobility_overlay = (function () {
             .attr("class", "node")
             .attr("transform", function (d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
             .on("mouseover", function (d) {
+                return chart.tip.show(d);
                 return d3.select(this).select("text")
                     .text(d.point.locationName)
                     .style("font-weight", "bold")
@@ -310,6 +319,7 @@ var mobility_overlay = (function () {
 
             })
             .on("mouseout", function (d) {
+                return chart.tip.hide();
                 return d3.select(this).select("text")
                     .text(d.point.locationName.substr(0, 7) + (((d.point.locationName.length) > 7) ? "..." : ""))
                     .style("font-weight", "normal")
@@ -444,7 +454,7 @@ var mobility_overlay = (function () {
         var bigGrp = this.infoLayer.append("g")
             .attr({
                 id: "calendarVis",
-                transform: "translate(70, 430)"
+                transform: "translate(70, 450)"
             })
 
         bigGrp.append("text")//.attr("class", "darkText")
@@ -717,10 +727,20 @@ var mobility_overlay = (function () {
         infoGrp.append("text")//.attr("class", "darkText")
            .attr({
                x: 0,
-               y: 20
+               y: 0
            })
-           .text("Average week trends")
+           .text("Average visits over the week")
            .style("font-size", "20");
+
+        infoGrp.selectAll(".dow").data(DoW).enter().append("g")
+              .append("text")//.attr("class", "darkText")
+              .attr({
+                  x: function (d, i) { return (24 * i * chart.dayBarWidth) + 10 + 60 },
+                  y: 25
+              })
+              .text(function (d) { return d })
+              .style("fill", "#9a9a9a")
+              .style("font-size", "11px");
 
 
         for (var k = 0; k < 5 && k < chart.data.location.length; k++) {
@@ -796,21 +816,14 @@ var mobility_overlay = (function () {
                .style("stroke", "#fafafa")
                .style("stroke-width", "0.5px");
 
-            //thisPathGrp.selectAll(".dow").data(DoW).enter().append("g")
-            //    .append("text")//.attr("class", "darkText")
-            //    .attr({
-            //        x: function (d, i) { return (24 * i * chart.dayBarWidth) + 25 },
-            //        y: 35
-            //    })
-            //    .text(function (d) { return d.substring(0,2) })
-            //    .style("font-size", "10px");
+  
 
         }
 
 
 
 
-        infoGrp.attr("transform", "translate(10,35)");
+        infoGrp.attr("transform", "translate(10,55)");
     };
 
     mobility_overlay.prototype.addToInfo = function (aNode) {
@@ -965,6 +978,8 @@ var mobility_overlay = (function () {
 
         var chart = this;        
         var once = false;
+
+        this.mapRef.map.center(this.data.location[0]);
 
         this.visLayer.select("#exploreBtn")
             .attr("visibility", "hidden");
