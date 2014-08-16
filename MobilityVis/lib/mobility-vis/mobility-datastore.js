@@ -41,7 +41,8 @@ var mobility_datastore = (function () {
         /// <field name="topN" type="Number">How many points should fit in a tree</field>
         this.topN = 75;
 
-       
+        this.NCalculated = false;
+
         var rawData = [];
 
         /*--------------------------------------  Constructor    -------------------------------------*/
@@ -132,16 +133,19 @@ var mobility_datastore = (function () {
             for (var i = 0; i < this.data.location.length; i++) {
                 if (this.data.location[i].count == 0) break;
                 this.data.location[i].makeAverage();
-                if (i < this.topN)
-                    this.data.location[i].inTop = true;
-                else
-                    this.data.location[i].inTop = false;
-
+                if (!this.NCalculated) {
+                    if (i < this.topN)
+                        this.data.location[i].inTop = true;
+                    else
+                        this.data.location[i].inTop = false;
+                }
 
                 slice = i + 1;
             }
             displayedPoints = this.data.location.slice(0, slice);
         }
+        if (!this.NCalculated)
+            this.NCalculated = true;
 
         return displayedPoints;
 
