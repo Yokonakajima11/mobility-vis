@@ -53,12 +53,21 @@ var mobility_timeline = (function () {
         this.pauseShape = "M0,0 L0,15 L6.5,15 L6.5,0 L0,0 M0,0 M8.5,15 L15,15 L15,0 L8.5,0 L8.5,15";
         /// <field name="stopShape" type="String">The stop button path shape</field>
         this.stopShape = "M1,1 L1,14 L14,14 L14,1 L1,1";
+
+        this.followShape = "M7.5,7.5 m-3,0 a 3,3 0 1,0 6,0 a  3,3 0 1,0 -6,0" +
+                           "M7.5,7.5 m-5,0 a 5,5 0 1,1 10,0 a  5,5 0 1,1 -10,0 M7.5,7.5 m-6,0 a 6,6 0 1,0 12,0 a  6,6 0 1,0 -12,0" +
+            "M8,1.5 L8,-1 L7,-1 L7,1.5 L8,1.5"+
+            "M8,13.5 L8,16 L7,16 L7,13.5 L8,13.5" +
+           "M1.5,8 L-1,8 L-1,7 L1.5,7 L1.5,8" +
+           "M13.5,8 L16,8 L16,7 L13.5,7 L13.5,8";
         /// <field name="yScale" type="d3.scale">The time scale for the timeline</field>
         this.yScale = null;
         /// <field name="brush" type="d3.svg.brush">The timeline selection brush</field>
         this.brush = null;
         /// <field name="tickDuration" type="Number">The duration of a single day animation</field>
-        this.tickDuration = 1000;
+        this.tickDuration = 4000;
+
+        this.follow = { flag: true };
 
         /// <field name="playing" type="Boolean">The flag indicating whether the animation is playing</field>
         this.playing = false;
@@ -202,7 +211,7 @@ var mobility_timeline = (function () {
         if ($.mlog)
             $.mlog.logEvent("timelinePlayback");
 
-        this.tickDuration = this.visRef.tickDuration = 1000;
+        this.tickDuration = this.visRef.tickDuration = 3000;
         var startDate = new Date(that.currentStartTime).setHours(0, 0, 0, 0);
         that.visRef.startAnimating();
         that.visRef.updateTime(startDate, startDate + (1000 * 60 * 60 * 24));
@@ -231,7 +240,7 @@ var mobility_timeline = (function () {
         d3.selectAll(".dateLabel").style("visibility", "hidden");
         this.parent.select("#timelineBg")
             .transition()
-            .attr("height", 620)
+            .attr("height", 650)
             .each("end", function () {
                 var playbackButtons = [
                     {
@@ -276,6 +285,20 @@ var mobility_timeline = (function () {
                                 d3.select(theButton).style("visibility", "hidden");
                             d3.select("#fastBtn").style("visibility", "visible");
                         }
+                    },
+                    {
+                        id: "followBtn",
+                        shape: that.followShape,
+                        tooltip: "Toggle following",
+                        clickFun: function (theButton) {
+                            if ($.mlog)
+                                $.mlog.logEvent("timelinePlaybackEvent");
+                            if (that.follow.flag)
+                                d3.select("#followBtn").style("opacity", 0.5);
+                            else
+                                d3.select("#followBtn").style("opacity", 1);
+                            that.follow.flag = !that.follow.flag;
+                        }
                     }
                 ];
 
@@ -305,6 +328,7 @@ var mobility_timeline = (function () {
 
                 exGrps.append("path")
                     .attr("d", function (d) { return d.shape; })
+                    
                     .attr("class", "timelineButton");
             });
        
@@ -363,7 +387,7 @@ var mobility_timeline = (function () {
     	/// </summary>
         var that = this;
         if (this.playing && that.currentTime < that.currentEndTime && !this.pause) {
-            that.visRef.timeTick();
+            that.visRef.timeTick(that.follow);
             d3.select("#currDate").text(mobility_timeline.formatDate(new Date(that.currentTime))).attr("transform", "translate(-59,5)");
 
             d3.select("#ticker").transition()

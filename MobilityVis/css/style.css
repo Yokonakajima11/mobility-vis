@@ -34,7 +34,7 @@ svg {
 
 
 
-a {
+a.blackUrl{
   text-decoration: underline;
   color: black;
   fill: black;

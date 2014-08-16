@@ -49,7 +49,7 @@ var mobility_datastore = (function () {
         //    data: dataObject,
         //    success: function (response) {
 
-        d3.json("data/data.json", function (error, response) {
+        d3.json("data/data_arek.json", function (error, response) {
             if (response.length == 0) {
                 var event = new Event("noData");
                 dispatchEvent(event);
@@ -67,7 +67,9 @@ var mobility_datastore = (function () {
             dispatchEvent(event);
         });
 
-    };
+
+
+    }
 
     /*-----------------------------------------  Data methods    --------------------------------------*/
     mobility_datastore.prototype.updatePoints = function (startTime, endTime, append) {

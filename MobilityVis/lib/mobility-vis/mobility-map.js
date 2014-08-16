@@ -118,7 +118,7 @@ var mobility_map = (function () {
         /// <field name="animating" type="Boolean">The flag indicating whether an animation is playing currently</field>                                                                              
         this.animating = false;
         /// <field name="tickDuration" type="Number">Duration of each tick during time animation</field>                                                                              
-        this.tickDuration = 1000;
+        this.tickDuration = 4000;
 
         /*--------------------------------------  Constructor    -------------------------------------*/        
         this.map
@@ -146,7 +146,8 @@ var mobility_map = (function () {
             chart.startTime = dataStore.startTime;
             chart.endTime = dataStore.endTime;
             chart.timelineRef = new mobility_timeline(chart.timelineLayer, chart, chart.data.time[0].start, chart.data.time[chart.data.time.length - 1].end, chart.startTime);           
-            chart.map.center({ lat: lat, lon: long });
+
+            
             chart.gui.blockGui();            
         });        
     };
@@ -175,7 +176,6 @@ var mobility_map = (function () {
 
         if ($.mlog)
             $.mlog.logEvent("mapOpened");
-
         this.updateTimeEnd();
         this.helpRef.startHelpMap();
     };
@@ -191,7 +191,7 @@ var mobility_map = (function () {
         this.drawPoints(animatedTick);
     };
 
-    mobility_map.prototype.updateConnections = function (animatedTick, duration) {
+    mobility_map.prototype.updateConnections = function (animatedTick, duration, follow) {
         /// <summary>
         /// Update the connections data within the given time period
         /// </summary>
@@ -210,7 +210,7 @@ var mobility_map = (function () {
                 this.drawConnection(this.data.connections[i], duration, 0);
         else
             for (var i = 0; i < this.data.connections.length ; i++)
-                this.drawConnection(this.data.connections[i], (duration) / this.data.connections.length, i * (duration / this.data.connections.length));
+                this.drawConnection(this.data.connections[i], (duration) / this.data.connections.length, i * (duration / this.data.connections.length), follow);
 
     };
 
@@ -282,7 +282,7 @@ var mobility_map = (function () {
         }       
     };
 
-    mobility_map.prototype.drawConnection = function (connection, speed, delay) {
+    mobility_map.prototype.drawConnection = function (connection, speed, delay, follow) {
     	/// <summary>
     	/// Draw a single connection on the map
     	/// </summary>
@@ -348,11 +348,17 @@ var mobility_map = (function () {
                 t = (t + (elapsed - delay - last) / speed) ;
                 last = elapsed - delay;
                 update();
+                if (follow != undefined && follow.flag) {
+                    var curMultiplier = (elapsed - delay) / speed; 
+                    chart.map.center({ lat: pointA.lat + ((pointB.lat - pointA.lat) * curMultiplier), lon: pointA.lon + ((pointB.lon - pointA.lon) * curMultiplier) });
+                }
                 if (elapsed-delay > speed)
                     return true;
             }
 
         });
+
+       
 
         function update() {
             // Update the drawing of the curve
@@ -402,6 +408,7 @@ var mobility_map = (function () {
             d = chart.map.locationPoint({ lon: d.lon, lat: d.lat });
             return "translate(" + d.x + "," + d.y + ")";
         }
+
     };
 
     mobility_map.prototype.drawGui = function (parent) {
@@ -669,14 +676,14 @@ var mobility_map = (function () {
         this.updateTimeEnd();
     };
 
-    mobility_map.prototype.timeTick = function () {
+    mobility_map.prototype.timeTick = function (follow) {
     	/// <summary>
     	/// Advance period by one day
     	/// </summary>
         this.startTime += 1000 * 60 * 60 * 24;
         this.endTime += 1000 * 60 * 60 * 24;
         this.updatePoints(true);
-        this.updateConnections(true, this.tickDuration);
+        this.updateConnections(true, this.tickDuration, follow);
     };
 
     mobility_map.prototype.startAnimating = function () {

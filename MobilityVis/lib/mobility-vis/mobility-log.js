@@ -24,8 +24,8 @@ var mobility_log = (function () {
         this.uploadUrl = serverUrl;
         this.token = token;
 
-        if ($.jStorage.get("logCache") != null)
-            this.log = $.jStorage.get("logCache");
+        if ($.storage.getItem("logCache", 'localStorage') != null)
+            this.log = $.parseJSON($.storage.getItem("logCache", 'localStorage'));
         else
             this.log = [];
 
@@ -35,16 +35,15 @@ var mobility_log = (function () {
                               "filterEvent",                              
                               "timelineEvent",
                               "timelinePlayback", "timelinePlaybackStopped", "timelinePlaybackEvent",
-                              "mapEvent",
                               "mapDetailOpened", "mapDetailClosed",
-                              "radialChartEvent", "radialChartSwitch", "barChartEvent",
+                              "radialChartSwitch", "barChartEvent",
                               "helpOpened", "helpClosed"];
 
         var that = this;
 
-        //setTimeout(function () {
-        //    that.submitLogs();
-        //}, 1000 * 60 * 5);
+        setTimeout(function () {
+            that.submitLogs();
+        }, 1000 * 60 * 5);
     };
 
     mobility_log.prototype.logEvent = function (event) {
@@ -54,7 +53,7 @@ var mobility_log = (function () {
     	/// <param name="event">The event to be logged</param>       
         if (this.allowedEvents.indexOf(event) != -1) {
             this.log.push([Math.round(Date.now()/1000), event]);
-            $.jStorage.set("logCache", this.log);
+            $.storage.setItem("logCache", JSON.stringify(this.log), 'localStorage');
         }
         
     };
@@ -64,7 +63,7 @@ var mobility_log = (function () {
         /// Clear the event log 
         /// </summary>
         this.log = [];
-        $.jStorage.set("logCache", this.log);
+        $.storage.setItem("logCache", JSON.stringify(this.log), 'localStorage');
     };
 
 
